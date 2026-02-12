@@ -1,0 +1,166 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: palmread_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${LARAVEL_DB_DATABASE:-palmread}
+      POSTGRES_USER: ${LARAVEL_DB_USERNAME:-palmread}
+      POSTGRES_PASSWORD: ${LARAVEL_DB_PASSWORD:-palmread}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: palmread_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  laravel_app:
+    build:
+      context: ./laravel_api
+      dockerfile: docker/php/Dockerfile
+    container_name: palmread_laravel_app
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${LARAVEL_APP_ENV:-local}
+      APP_DEBUG: ${LARAVEL_APP_DEBUG:-true}
+      APP_URL: ${LARAVEL_APP_URL:-http://localhost:8080}
+      DB_CONNECTION: ${LARAVEL_DB_CONNECTION:-pgsql}
+      DB_HOST: ${LARAVEL_DB_HOST:-postgres}
+      DB_PORT: ${LARAVEL_DB_PORT:-5432}
+      DB_DATABASE: ${LARAVEL_DB_DATABASE:-palmread}
+      DB_USERNAME: ${LARAVEL_DB_USERNAME:-palmread}
+      DB_PASSWORD: ${LARAVEL_DB_PASSWORD:-palmread}
+      QUEUE_CONNECTION: ${LARAVEL_QUEUE_CONNECTION:-redis}
+      REDIS_HOST: ${LARAVEL_REDIS_HOST:-redis}
+      REDIS_PORT: ${LARAVEL_REDIS_PORT:-6379}
+      REDIS_CLIENT: ${LARAVEL_REDIS_CLIENT:-predis}
+      CACHE_STORE: ${LARAVEL_CACHE_STORE:-file}
+      SESSION_DRIVER: ${LARAVEL_SESSION_DRIVER:-file}
+      CV_SERVICE_BASE_URL: ${LARAVEL_CV_SERVICE_BASE_URL:-http://cv_service:8001}
+      PALM_STORAGE_DISK: ${LARAVEL_PALM_STORAGE_DISK:-palms}
+      PALM_IMAGE_RETENTION_DAYS: ${LARAVEL_PALM_IMAGE_RETENTION_DAYS:-30}
+      PALM_UPLOAD_MAX_MB: ${LARAVEL_PALM_UPLOAD_MAX_MB:-8}
+      PALM_HISTORY_LIMIT: ${LARAVEL_PALM_HISTORY_LIMIT:-10}
+      PALM_LLM_ENABLED: ${LARAVEL_PALM_LLM_ENABLED:-false}
+      PALM_LLM_BASE_URL: ${LARAVEL_PALM_LLM_BASE_URL:-http://ollama:11434}
+      PALM_LLM_MODEL: ${LARAVEL_PALM_LLM_MODEL:-llama3.2:1b}
+      PALM_LLM_TIMEOUT_SECONDS: ${LARAVEL_PALM_LLM_TIMEOUT_SECONDS:-60}
+      PALM_LLM_TEMPERATURE: ${LARAVEL_PALM_LLM_TEMPERATURE:-0}
+      PALM_LLM_NUM_PREDICT: ${LARAVEL_PALM_LLM_NUM_PREDICT:-420}
+      PALM_LLM_SEED: ${LARAVEL_PALM_LLM_SEED:-42}
+      PALM_LLM_FORCE_ENGLISH: ${LARAVEL_PALM_LLM_FORCE_ENGLISH:-true}
+      PALM_LLM_ENGLISH_MODEL: ${LARAVEL_PALM_LLM_ENGLISH_MODEL:-llama3.2:1b}
+      PALM_LLM_REQUIRE_SUCCESS: ${LARAVEL_PALM_LLM_REQUIRE_SUCCESS:-false}
+    depends_on:
+      - postgres
+      - redis
+      - cv_service
+      - ollama
+    volumes:
+      - ./laravel_api:/var/www/html
+      - palm_images:/var/www/html/storage/app/palms
+
+  laravel_worker:
+    build:
+      context: ./laravel_api
+      dockerfile: docker/php/Dockerfile
+    container_name: palmread_laravel_worker
+    restart: unless-stopped
+    command: php artisan queue:work redis --queue=palm_reads --tries=3 --sleep=1 --timeout=30
+    environment:
+      APP_ENV: ${LARAVEL_APP_ENV:-local}
+      APP_DEBUG: ${LARAVEL_APP_DEBUG:-true}
+      APP_URL: ${LARAVEL_APP_URL:-http://localhost:8080}
+      DB_CONNECTION: ${LARAVEL_DB_CONNECTION:-pgsql}
+      DB_HOST: ${LARAVEL_DB_HOST:-postgres}
+      DB_PORT: ${LARAVEL_DB_PORT:-5432}
+      DB_DATABASE: ${LARAVEL_DB_DATABASE:-palmread}
+      DB_USERNAME: ${LARAVEL_DB_USERNAME:-palmread}
+      DB_PASSWORD: ${LARAVEL_DB_PASSWORD:-palmread}
+      QUEUE_CONNECTION: ${LARAVEL_QUEUE_CONNECTION:-redis}
+      REDIS_HOST: ${LARAVEL_REDIS_HOST:-redis}
+      REDIS_PORT: ${LARAVEL_REDIS_PORT:-6379}
+      REDIS_CLIENT: ${LARAVEL_REDIS_CLIENT:-predis}
+      CACHE_STORE: ${LARAVEL_CACHE_STORE:-file}
+      SESSION_DRIVER: ${LARAVEL_SESSION_DRIVER:-file}
+      CV_SERVICE_BASE_URL: ${LARAVEL_CV_SERVICE_BASE_URL:-http://cv_service:8001}
+      PALM_STORAGE_DISK: ${LARAVEL_PALM_STORAGE_DISK:-palms}
+      PALM_IMAGE_RETENTION_DAYS: ${LARAVEL_PALM_IMAGE_RETENTION_DAYS:-30}
+      PALM_UPLOAD_MAX_MB: ${LARAVEL_PALM_UPLOAD_MAX_MB:-8}
+      PALM_HISTORY_LIMIT: ${LARAVEL_PALM_HISTORY_LIMIT:-10}
+      PALM_LLM_ENABLED: ${LARAVEL_PALM_LLM_ENABLED:-false}
+      PALM_LLM_BASE_URL: ${LARAVEL_PALM_LLM_BASE_URL:-http://ollama:11434}
+      PALM_LLM_MODEL: ${LARAVEL_PALM_LLM_MODEL:-llama3.2:1b}
+      PALM_LLM_TIMEOUT_SECONDS: ${LARAVEL_PALM_LLM_TIMEOUT_SECONDS:-60}
+      PALM_LLM_TEMPERATURE: ${LARAVEL_PALM_LLM_TEMPERATURE:-0}
+      PALM_LLM_NUM_PREDICT: ${LARAVEL_PALM_LLM_NUM_PREDICT:-420}
+      PALM_LLM_SEED: ${LARAVEL_PALM_LLM_SEED:-42}
+      PALM_LLM_FORCE_ENGLISH: ${LARAVEL_PALM_LLM_FORCE_ENGLISH:-true}
+      PALM_LLM_ENGLISH_MODEL: ${LARAVEL_PALM_LLM_ENGLISH_MODEL:-llama3.2:1b}
+      PALM_LLM_REQUIRE_SUCCESS: ${LARAVEL_PALM_LLM_REQUIRE_SUCCESS:-false}
+    depends_on:
+      - laravel_app
+      - redis
+      - cv_service
+      - ollama
+    volumes:
+      - ./laravel_api:/var/www/html
+      - palm_images:/var/www/html/storage/app/palms
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: palmread_nginx
+    restart: unless-stopped
+    depends_on:
+      - laravel_app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./laravel_api:/var/www/html
+      - ./laravel_api/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+  cv_service:
+    build:
+      context: ./cv_service
+      dockerfile: Dockerfile
+    container_name: palmread_cv_service
+    restart: unless-stopped
+    environment:
+      CV_HOST: ${CV_HOST:-0.0.0.0}
+      CV_PORT: ${CV_PORT:-8001}
+      CV_MAX_IMAGE_SIDE: ${CV_MAX_IMAGE_SIDE:-1600}
+      CV_ROI_SIZE: ${CV_ROI_SIZE:-512}
+      CV_TIMEOUT_MS: ${CV_TIMEOUT_MS:-8000}
+      CV_NUM_THREADS: ${CV_NUM_THREADS:-1}
+      PYTHONHASHSEED: 0
+      LOG_LEVEL: ${CV_LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
+    volumes:
+      # Keep the palm image mount path aligned with Laravel local_path payloads.
+      - palm_images:/var/www/html/storage/app/palms
+      - palm_images:/data/palms
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: palmread_ollama
+    restart: unless-stopped
+    expose:
+      - "11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  postgres_data:
+  palm_images:
+  ollama_data:

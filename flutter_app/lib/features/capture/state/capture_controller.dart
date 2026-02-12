@@ -1,0 +1,72 @@
+import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../../core/utils/image_quality.dart';
+import '../domain/capture_quality_result.dart';
+
+class CaptureState {
+  const CaptureState({
+    this.imageFile,
+    this.quality,
+    this.handedness = 'unknown',
+    this.isEvaluating = false,
+  });
+
+  final File? imageFile;
+  final CaptureQualityResult? quality;
+  final String handedness;
+  final bool isEvaluating;
+
+  CaptureState copyWith({
+    File? imageFile,
+    CaptureQualityResult? quality,
+    String? handedness,
+    bool? isEvaluating,
+    bool clearImage = false,
+  }) {
+    return CaptureState(
+      imageFile: clearImage ? null : (imageFile ?? this.imageFile),
+      quality: clearImage ? null : (quality ?? this.quality),
+      handedness: handedness ?? this.handedness,
+      isEvaluating: isEvaluating ?? this.isEvaluating,
+    );
+  }
+}
+
+final captureControllerProvider =
+    StateNotifierProvider<CaptureController, CaptureState>(
+  (ref) => CaptureController(),
+);
+
+class CaptureController extends StateNotifier<CaptureState> {
+  CaptureController() : super(const CaptureState());
+
+  Future<void> setImage(XFile file) async {
+    state = state.copyWith(isEvaluating: true);
+    try {
+      final bytes = await file.readAsBytes();
+      final quality = await ImageQuality.evaluateAsync(bytes);
+      state = state.copyWith(
+        imageFile: File(file.path),
+        quality: quality,
+        isEvaluating: false,
+      );
+    } catch (_) {
+      state = state.copyWith(isEvaluating: false);
+    }
+  }
+
+  void setHandedness(String handedness) {
+    state = state.copyWith(handedness: handedness);
+  }
+
+  void clear() {
+    state = state.copyWith(
+      clearImage: true,
+      handedness: 'unknown',
+      isEvaluating: false,
+    );
+  }
+}
