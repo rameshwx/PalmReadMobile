@@ -49,6 +49,10 @@ See:
 - `cv_service/README.md`
 - `flutter_app/README.md`
 
+## CI/CD (Backend -> VPS)
+GitHub Actions workflow is included for deploying backend changes to your VPS:
+- `docs/CICD_VPS.md`
+
 ## Acceptance Smoke Flow
 1. Register user with `/api/auth/register`.
 2. Login `/api/auth/login` and use bearer token.
