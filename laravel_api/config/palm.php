@@ -1,0 +1,21 @@
+<?php
+
+return [
+    'storage_disk' => env('PALM_STORAGE_DISK', 'palms'),
+    'image_retention_days' => (int) env('PALM_IMAGE_RETENTION_DAYS', 30),
+    'upload_max_mb' => (int) env('PALM_UPLOAD_MAX_MB', 8),
+    'polling_recommended_seconds' => (int) env('PALM_POLLING_RECOMMENDED_SECONDS', 2),
+    'history_limit' => (int) env('PALM_HISTORY_LIMIT', 10),
+    'llm_enabled' => env('PALM_LLM_ENABLED', false),
+    'llm_base_url' => env('PALM_LLM_BASE_URL', 'http://ollama:11434'),
+    'llm_model' => env('PALM_LLM_MODEL', 'llama3.2:1b'),
+    'llm_timeout_seconds' => (int) env('PALM_LLM_TIMEOUT_SECONDS', 60),
+    'llm_temperature' => (float) env('PALM_LLM_TEMPERATURE', 0),
+    'llm_num_predict' => (int) env('PALM_LLM_NUM_PREDICT', 420),
+    'llm_seed' => (int) env('PALM_LLM_SEED', 42),
+    'llm_force_english' => env('PALM_LLM_FORCE_ENGLISH', true),
+    'llm_english_model' => env('PALM_LLM_ENGLISH_MODEL', 'llama3.2:1b'),
+    'llm_require_success' => env('PALM_LLM_REQUIRE_SUCCESS', false),
+    'cv_service_base_url' => env('CV_SERVICE_BASE_URL', 'http://127.0.0.1:8001'),
+    'line_keys' => ['life', 'head', 'heart', 'fate', 'sun'],
+];
