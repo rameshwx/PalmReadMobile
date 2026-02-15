@@ -14,6 +14,32 @@ class AuthApi {
 
   final Dio _dio;
 
+  Future<OtpChallenge> requestOtp({required String email}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/auth/otp/request',
+      data: {'email': email},
+    );
+
+    return OtpChallenge.fromJson(response.data ?? const {});
+  }
+
+  Future<AuthSession> verifyOtp({
+    required String email,
+    required String challengeId,
+    required String code,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/auth/otp/verify',
+      data: {
+        'email': email,
+        'challenge_id': challengeId,
+        'code': code,
+      },
+    );
+
+    return AuthSession.fromJson(response.data!);
+  }
+
   Future<AuthSession> register({
     required String name,
     required String email,

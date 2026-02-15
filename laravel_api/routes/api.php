@@ -13,11 +13,13 @@ Route::get('/health', function () {
     ]);
 });
 
-Route::prefix('auth')->group(function (): void {
+Route::prefix('auth')->middleware(['correlation.id'])->group(function (): void {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/otp/request', [AuthController::class, 'requestOtp']);
+    Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
 });
 
 Route::middleware(['auth:sanctum', 'correlation.id'])->group(function (): void {

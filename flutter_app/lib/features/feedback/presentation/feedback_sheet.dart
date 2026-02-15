@@ -4,9 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../result/data/palm_reads_api.dart';
 
 class FeedbackSheet extends ConsumerStatefulWidget {
-  const FeedbackSheet({super.key, required this.palmReadId});
+  const FeedbackSheet({
+    super.key,
+    required this.palmReadId,
+    this.title = 'Was this accurate?',
+    this.initialIsCorrect,
+  });
 
   final String palmReadId;
+  final String title;
+  final bool? initialIsCorrect;
 
   @override
   ConsumerState<FeedbackSheet> createState() => _FeedbackSheetState();
@@ -16,6 +23,12 @@ class _FeedbackSheetState extends ConsumerState<FeedbackSheet> {
   bool? _isCorrect;
   final _noteController = TextEditingController();
   bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isCorrect = widget.initialIsCorrect;
+  }
 
   @override
   void dispose() {
@@ -68,8 +81,10 @@ class _FeedbackSheetState extends ConsumerState<FeedbackSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Overlay correct?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(
+            widget.title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [

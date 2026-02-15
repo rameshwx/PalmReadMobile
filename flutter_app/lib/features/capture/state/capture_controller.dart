@@ -10,7 +10,7 @@ class CaptureState {
   const CaptureState({
     this.imageFile,
     this.quality,
-    this.handedness = 'unknown',
+    this.handedness = 'right',
     this.isEvaluating = false,
   });
 
@@ -65,7 +65,7 @@ class CaptureController extends StateNotifier<CaptureState> {
   void clear() {
     state = state.copyWith(
       clearImage: true,
-      handedness: 'unknown',
+      handedness: 'right',
       isEvaluating: false,
     );
   }
