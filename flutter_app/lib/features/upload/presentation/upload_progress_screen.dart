@@ -22,6 +22,7 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
     with SingleTickerProviderStateMixin {
   bool _started = false;
   late final AnimationController _spin;
+  late final ProviderSubscription<UploadState> _uploadSub;
 
   @override
   void initState() {
@@ -30,10 +31,14 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
         AnimationController(vsync: this, duration: const Duration(seconds: 8))
           ..repeat();
 
-    ref.listen<UploadState>(uploadControllerProvider, (prev, next) {
+    // Riverpod: `ref.listen` is build-only. Use manual subscription in initState.
+    _uploadSub =
+        ref.listenManual<UploadState>(uploadControllerProvider, (prev, next) {
       if (!mounted) return;
 
-      if (next.status == 'completed' && next.readId != null) {
+      if (prev?.status != 'completed' &&
+          next.status == 'completed' &&
+          next.readId != null) {
         final readId = next.readId!;
         final capture = ref.read(captureControllerProvider);
         if (capture.imageFile != null) {
@@ -47,7 +52,8 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
         );
       }
 
-      if (next.status == 'failed' &&
+      if (prev?.status != 'failed' &&
+          next.status == 'failed' &&
           next.error != null &&
           next.error!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -59,6 +65,7 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
 
   @override
   void dispose() {
+    _uploadSub.close();
     _spin.dispose();
     super.dispose();
   }
