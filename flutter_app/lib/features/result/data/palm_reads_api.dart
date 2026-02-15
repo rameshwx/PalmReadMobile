@@ -21,6 +21,7 @@ class PalmReadsApi {
     required File imageFile,
     required String handednessHint,
     ProgressCallback? onSendProgress,
+    CancelToken? cancelToken,
   }) async {
     final formData = FormData.fromMap({
       'handedness_hint': handednessHint,
@@ -34,6 +35,7 @@ class PalmReadsApi {
       '/api/palm-reads',
       data: formData,
       onSendProgress: onSendProgress,
+      cancelToken: cancelToken,
     );
 
     return PalmReadCreateResponse.fromJson(response.data!);
@@ -64,18 +66,13 @@ class PalmReadsApi {
     return Uint8List.fromList(bytes);
   }
 
-  Future<List<PalmReadDetail>> listPalmReads({int page = 1}) async {
+  Future<PalmReadHistoryPage> listPalmReads({int page = 1}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/palm-reads',
       queryParameters: {'page': page},
     );
 
-    final payload = response.data ?? const {};
-    final data = payload['data'] as List<dynamic>? ?? [];
-
-    return data
-        .map((e) => PalmReadDetail.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return PalmReadHistoryPage.fromJson(response.data ?? const {});
   }
 
   Future<void> submitFeedback({

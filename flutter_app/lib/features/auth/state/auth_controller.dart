@@ -58,6 +58,41 @@ class AuthController extends AsyncNotifier<AuthState> {
     }
   }
 
+  Future<({OtpChallenge? challenge, String? error})> requestOtp(
+      String email) async {
+    try {
+      final challenge =
+          await ref.read(authApiProvider).requestOtp(email: email);
+      return (challenge: challenge, error: null);
+    } catch (error) {
+      return (challenge: null, error: _errorMessage(error));
+    }
+  }
+
+  Future<String?> verifyOtp({
+    required String email,
+    required String challengeId,
+    required String code,
+  }) async {
+    final fallback = state.valueOrNull ?? const AuthState();
+
+    try {
+      final session = await ref.read(authApiProvider).verifyOtp(
+            email: email,
+            challengeId: challengeId,
+            code: code,
+          );
+      await ref.read(secureTokenStoreProvider).writeToken(session.token);
+      ref.read(sessionExpiredProvider.notifier).state = false;
+      state = AsyncData(AuthState(user: session.user, token: session.token));
+      return null;
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+      state = AsyncData(fallback);
+      return _errorMessage(error);
+    }
+  }
+
   Future<String?> login(String email, String password) async {
     final fallback = state.valueOrNull ?? const AuthState();
 

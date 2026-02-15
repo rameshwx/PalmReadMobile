@@ -6,6 +6,8 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/capture/presentation/capture_screen.dart';
 import 'features/history/presentation/history_screen.dart';
+import 'shared/theme/palm_theme.dart';
+import 'shared/theme/palm_tokens.dart';
 
 class PalmReadApp extends ConsumerWidget {
   const PalmReadApp({super.key});
@@ -17,10 +19,9 @@ class PalmReadApp extends ConsumerWidget {
 
     return MaterialApp(
       title: 'PalmReadMobile',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A6B57)),
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.light,
+      theme: PalmTheme.light(),
       home: sessionExpired
           ? const LoginScreen()
           : auth.when(
@@ -51,19 +52,113 @@ class _HomeShellState extends ConsumerState<_HomeShell> {
 
     return Scaffold(
       body: pages[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (idx) => setState(() => _index = idx),
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.camera_alt_outlined), label: 'Capture'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
-        ],
+      bottomNavigationBar: _BottomNavBar(
+        index: _index,
+        onSelect: (idx) => setState(() => _index = idx),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-        icon: const Icon(Icons.logout),
-        label: const Text('Logout'),
+    );
+  }
+}
+
+class _BottomNavBar extends StatelessWidget {
+  const _BottomNavBar({required this.index, required this.onSelect});
+
+  final int index;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: PalmTokens.surface,
+        border: Border(
+          top: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: _NavItem(
+                  selected: index == 0,
+                  label: 'Capture',
+                  icon: Icons.filter_center_focus,
+                  onTap: () => onSelect(0),
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
+                  selected: index == 1,
+                  label: 'History',
+                  icon: Icons.history,
+                  onTap: () => onSelect(1),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.selected,
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? PalmTokens.primaryDark : PalmTokens.textSub;
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          color: color,
+        );
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(PalmTokens.radiusMd),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 4,
+              width: 44,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: selected ? PalmTokens.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: selected
+                    ? PalmTokens.primary.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 26),
+            ),
+            const SizedBox(height: 6),
+            Text(label, style: textStyle),
+          ],
+        ),
       ),
     );
   }

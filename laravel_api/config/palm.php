@@ -18,4 +18,8 @@ return [
     'llm_require_success' => env('PALM_LLM_REQUIRE_SUCCESS', false),
     'cv_service_base_url' => env('CV_SERVICE_BASE_URL', 'http://127.0.0.1:8001'),
     'line_keys' => ['life', 'head', 'heart', 'fate', 'sun'],
+    'otp_ttl_seconds' => (int) env('PALM_OTP_TTL_SECONDS', 600),
+    'otp_resend_after_seconds' => (int) env('PALM_OTP_RESEND_AFTER_SECONDS', 45),
+    'otp_max_attempts' => (int) env('PALM_OTP_MAX_ATTEMPTS', 5),
+    'otp_debug_echo' => env('PALM_OTP_DEBUG_ECHO', false),
 ];

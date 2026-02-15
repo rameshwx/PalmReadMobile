@@ -31,3 +31,26 @@ class AuthSession {
     );
   }
 }
+
+class OtpChallenge {
+  const OtpChallenge({
+    required this.challengeId,
+    required this.expiresInSeconds,
+    required this.resendAfterSeconds,
+    this.debugCode,
+  });
+
+  final String challengeId;
+  final int expiresInSeconds;
+  final int resendAfterSeconds;
+  final String? debugCode;
+
+  factory OtpChallenge.fromJson(Map<String, dynamic> json) {
+    return OtpChallenge(
+      challengeId: json['challenge_id']?.toString() ?? '',
+      expiresInSeconds: (json['expires_in_seconds'] as num?)?.toInt() ?? 0,
+      resendAfterSeconds: (json['resend_after_seconds'] as num?)?.toInt() ?? 0,
+      debugCode: json['debug_code']?.toString(),
+    );
+  }
+}

@@ -134,3 +134,21 @@ class PalmReadDetail {
     );
   }
 }
+
+class PalmReadHistoryPage {
+  const PalmReadHistoryPage({required this.items, required this.total});
+
+  final List<PalmReadDetail> items;
+  final int total;
+
+  factory PalmReadHistoryPage.fromJson(Map<String, dynamic> json) {
+    final items = (json['data'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(PalmReadDetail.fromJson)
+        .toList();
+    return PalmReadHistoryPage(
+      items: items,
+      total: (json['total'] as num?)?.toInt() ?? items.length,
+    );
+  }
+}
