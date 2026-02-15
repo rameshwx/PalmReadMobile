@@ -45,10 +45,6 @@ class MediaPipeHandDetector:
                 detected_handedness = label  # type: ignore[assignment]
             handedness_score = float(getattr(cls, "score", 0.0) or 0.0)
 
-        # Guardrail: if MediaPipe is unsure, treat it as "no hand" rather than generating junk.
-        if handedness_score > 0 and handedness_score < 0.65:
-            raise HandNotDetectedError("hand_not_detected_low_confidence")
-
         landmarks = result.multi_hand_landmarks[0]
         xs = [lm.x for lm in landmarks.landmark]
         ys = [lm.y for lm in landmarks.landmark]
