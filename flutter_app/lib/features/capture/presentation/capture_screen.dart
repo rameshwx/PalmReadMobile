@@ -1,10 +1,7 @@
-import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
@@ -21,10 +18,6 @@ class CaptureScreen extends ConsumerStatefulWidget {
 class _CaptureScreenState extends ConsumerState<CaptureScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _scanController;
-  CameraController? _cameraController;
-  bool _cameraStarting = false;
-  bool _capturing = false;
-  bool _autoCameraStarted = false;
 
   @override
   void initState() {
@@ -36,23 +29,32 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_autoCameraStarted) return;
-    _autoCameraStarted = true;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        unawaited(_startCamera());
-      }
-    });
-  }
-
-  @override
   void dispose() {
     _scanController.dispose();
-    _cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickFromCamera() async {
+    final state = ref.read(captureControllerProvider);
+    if (state.isEvaluating) return;
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.rear,
+      imageQuality: 92,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+
+    if (file == null) return;
+
+    await ref.read(captureControllerProvider.notifier).setImage(file);
+    if (!mounted) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PreviewScreen()),
+    );
   }
 
   Future<void> _pickFromGallery() async {
@@ -83,89 +85,6 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
     );
   }
 
-  Future<void> _startCamera() async {
-    if (_cameraStarting) return;
-    final existing = _cameraController;
-    if (existing != null && existing.value.isInitialized) {
-      return;
-    }
-
-    setState(() => _cameraStarting = true);
-    try {
-      final cameras = await availableCameras();
-      final back = cameras
-          .where((c) => c.lensDirection == CameraLensDirection.back)
-          .firstOrNull;
-      final chosen = back ?? cameras.firstOrNull;
-      if (chosen == null) {
-        throw StateError('No camera available on this device.');
-      }
-
-      final controller = CameraController(
-        chosen,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-
-      // Replace any existing controller to avoid leaking resources.
-      final prev = _cameraController;
-      _cameraController = controller;
-      await prev?.dispose();
-
-      await controller.initialize();
-      await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-
-      if (!mounted) return;
-      setState(() {});
-    } on CameraException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Camera error: ${e.description ?? e.code}')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Camera unavailable: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _cameraStarting = false);
-    }
-  }
-
-  Future<void> _takePicture() async {
-    final state = ref.read(captureControllerProvider);
-    if (state.isEvaluating || _capturing) return;
-
-    final controller = _cameraController;
-    if (controller == null || !controller.value.isInitialized) {
-      await _startCamera();
-      return;
-    }
-
-    setState(() => _capturing = true);
-    try {
-      final file = await controller.takePicture();
-      await ref.read(captureControllerProvider.notifier).setImage(file);
-      if (!mounted) return;
-
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PreviewScreen()),
-      );
-    } on CameraException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Capture failed: ${e.description ?? e.code}')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Capture failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _capturing = false);
-    }
-  }
-
   void _openHelp() {
     showDialog<void>(
       context: context,
@@ -193,8 +112,6 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
     final lightingOk = quality?.isBrightnessOk ?? false;
     final focusOk = quality?.isBlurOk ?? false;
     final centeredOk = quality?.isCentered ?? false;
-    final cameraReady = _cameraController != null &&
-        (_cameraController?.value.isInitialized ?? false);
 
     return Scaffold(
       body: SafeArea(
@@ -272,27 +189,20 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
                               BorderRadius.circular(PalmTokens.radiusXl),
                           child: Stack(
                             children: [
-                              if (cameraReady)
-                                Positioned.fill(
-                                  child: _CameraPreviewCover(
-                                    controller: _cameraController!,
-                                  ),
-                                )
-                              else
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.black.withValues(alpha: 0.25),
-                                          Colors.black.withValues(alpha: 0.55),
-                                        ],
-                                      ),
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withValues(alpha: 0.25),
+                                        Colors.black.withValues(alpha: 0.55),
+                                      ],
                                     ),
                                   ),
                                 ),
+                              ),
                               Positioned.fill(
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
@@ -393,19 +303,10 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
                                         ),
                                       ),
                                     ),
-                                    if (cameraReady) ...[
-                                      const SizedBox(height: 14),
-                                      _ShutterButton(
-                                        busy: _capturing,
-                                        onTap: _takePicture,
-                                      ),
-                                    ],
                                   ],
                                 ),
                               ),
-                              if (state.isEvaluating ||
-                                  _cameraStarting ||
-                                  (cameraReady && _capturing))
+                              if (state.isEvaluating)
                                 Positioned.fill(
                                   child: Container(
                                     color: Colors.black.withValues(alpha: 0.38),
@@ -460,13 +361,11 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
                 children: [
                   Expanded(
                     child: _ActionCard(
-                      title: cameraReady ? 'Camera On' : 'Use Camera',
+                      title: 'Use Camera',
                       icon: Icons.photo_camera_outlined,
                       selected: true,
-                      enabled: !cameraReady &&
-                          !state.isEvaluating &&
-                          !_cameraStarting,
-                      onTap: _startCamera,
+                      enabled: !state.isEvaluating,
+                      onTap: _pickFromCamera,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -494,87 +393,6 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CameraPreviewCover extends StatelessWidget {
-  const _CameraPreviewCover({required this.controller});
-
-  final CameraController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!controller.value.isInitialized) {
-      return const SizedBox.shrink();
-    }
-
-    return ClipRect(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = constraints.biggest;
-          var scale = size.aspectRatio * controller.value.aspectRatio;
-          if (scale < 1) scale = 1 / scale;
-
-          return Transform.scale(
-            scale: scale,
-            child: Center(child: CameraPreview(controller)),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ShutterButton extends StatelessWidget {
-  const _ShutterButton({required this.busy, required this.onTap});
-
-  final bool busy;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: busy ? null : onTap,
-      child: AnimatedOpacity(
-        opacity: busy ? 0.6 : 1,
-        duration: const Duration(milliseconds: 150),
-        child: Container(
-          width: 78,
-          height: 78,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.70),
-              width: 3,
-            ),
-          ),
-          child: Center(
-            child: Container(
-              width: 58,
-              height: 58,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: PalmTokens.primary,
-              ),
-              child: busy
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        color: PalmTokens.neutralDark,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.camera_alt,
-                      color: PalmTokens.neutralDark,
-                      size: 28,
-                    ),
-            ),
           ),
         ),
       ),
