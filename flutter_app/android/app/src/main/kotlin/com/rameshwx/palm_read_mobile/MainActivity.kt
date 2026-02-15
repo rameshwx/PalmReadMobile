@@ -1,4 +1,4 @@
-package com.example.palm_read_mobile
+package com.rameshwx.palm_read_mobile
 
 import io.flutter.embedding.android.FlutterActivity
 
