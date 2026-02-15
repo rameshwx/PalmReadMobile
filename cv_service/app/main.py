@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
 
-from app.api.schemas import AnalyzeRequest, AnalyzeResponse
+from app.api.schemas import AnalyzeRequest, AnalyzeResponse, ValidateRequest, ValidateResponse
 from app.core.config import get_settings
 from app.core.logging import CorrelationLoggerAdapter, configure_logging
 from app.pipeline.determinism import configure_determinism
@@ -47,3 +47,24 @@ def analyze(payload: AnalyzeRequest, x_correlation_id: Optional[str] = Header(de
     except Exception as exc:  # pragma: no cover - runtime safety
         log.exception("Analyze failed")
         raise HTTPException(status_code=500, detail=f"analysis_failed: {exc}") from exc
+
+
+@app.post("/validate", response_model=ValidateResponse)
+def validate(payload: ValidateRequest, x_correlation_id: Optional[str] = Header(default=None)) -> ValidateResponse:
+    correlation_id = payload.correlation_id or x_correlation_id or "none"
+    log = CorrelationLoggerAdapter(logger, {"correlation_id": correlation_id})
+
+    try:
+        handedness_hint = payload.handedness_hint or "unknown"
+        result = orchestrator.validate(payload.local_path, handedness_hint=handedness_hint)
+        log.info("Validation complete", extra={"processing_ms": result["processing_ms"]})
+        return ValidateResponse(**result)
+    except (HandNotDetectedError, PalmLinesNotDetectedError) as exc:
+        log.info("Rejected input", extra={"reason": str(exc)})
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        log.warning("Validate failed file not found: %s", exc)
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - runtime safety
+        log.exception("Validate failed")
+        raise HTTPException(status_code=500, detail=f"validation_failed: {exc}") from exc

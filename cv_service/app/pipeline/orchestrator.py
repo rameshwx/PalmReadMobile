@@ -25,6 +25,49 @@ class PalmAnalysisOrchestrator:
         self.preprocessor = PalmPreprocessor()
         self.selector = HeuristicLineSelector()
 
+    def validate(self, local_path: str, handedness_hint: Handedness = "unknown") -> Dict[str, Any]:
+        started = time.perf_counter()
+
+        if not os.path.exists(local_path):
+            raise FileNotFoundError(f"Image path not found: {local_path}")
+
+        image_bgr = cv2.imread(local_path)
+        if image_bgr is None:
+            raise ValueError("Failed to read image with OpenCV.")
+
+        image_bgr = self._resize_if_needed(image_bgr)
+
+        roi_result = self.detector.detect(image_bgr, self.roi_size, handedness_hint)
+        binary = self.preprocessor.run(roi_result.roi)
+        candidates = extract_candidate_paths(binary, self.roi_size)
+        selected_lines = self.selector.select(candidates, self.roi_size)
+        mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
+
+        detected_lines = sum(
+            1
+            for line in mapped_lines
+            if not bool(line.get("missing", False)) and isinstance(line.get("points"), list) and len(line["points"]) >= 2
+        )
+
+        # Guardrail: If we can't extract at least a couple of lines, generating a "reading" is misleading.
+        if detected_lines < 2:
+            raise PalmLinesNotDetectedError("palm_lines_not_detected")
+
+        warnings = list(roi_result.warnings)
+        missing_count = sum(1 for line in mapped_lines if bool(line.get("missing", False)))
+        if missing_count > 0:
+            warnings.append(f"missing_lines:{missing_count}")
+
+        processing_ms = int((time.perf_counter() - started) * 1000)
+
+        return {
+            "handedness": roi_result.handedness,
+            "roi_meta": roi_result.roi_meta,
+            "detected_lines": detected_lines,
+            "processing_ms": processing_ms,
+            "warnings": warnings,
+        }
+
     def analyze(self, local_path: str, handedness_hint: Handedness = "unknown") -> Dict[str, Any]:
         started = time.perf_counter()
 

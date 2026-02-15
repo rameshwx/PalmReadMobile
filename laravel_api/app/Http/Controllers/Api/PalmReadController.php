@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessPalmReadJob;
 use App\Models\PalmRead;
+use App\Services\Cv\CvClient;
 use App\Services\Storage\PalmImageStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class PalmReadController extends Controller
 {
@@ -43,6 +45,31 @@ class PalmReadController extends Controller
 
         $storedPath = $this->imageStorage->storeUpload($uploaded);
         $correlationId = (string) $request->attributes->get('correlation_id');
+
+        // Reject obvious non-palm images early, so the user doesn't wait for a queued job to fail.
+        try {
+            $cv = app(CvClient::class);
+            $cv->validate(
+                $this->imageStorage->absolutePath($storedPath),
+                (string) ($data['handedness_hint'] ?? 'unknown'),
+                $correlationId
+            );
+        } catch (Throwable $exception) {
+            $this->imageStorage->deleteIfExists($storedPath);
+
+            $msg = mb_strtolower($exception->getMessage());
+            $invalid =
+                str_contains($msg, 'hand_not_detected') ||
+                str_contains($msg, 'palm_lines_not_detected') ||
+                str_contains($msg, 'invalid_image') ||
+                str_contains($msg, 'invalid_hand');
+
+            if ($invalid) {
+                return response()->json(['detail' => $exception->getMessage()], 422);
+            }
+
+            return response()->json(['detail' => 'cv_validation_failed'], 503);
+        }
 
         $palmRead = PalmRead::query()->create([
             'user_id' => $request->user()->id,
