@@ -12,6 +12,7 @@ from app.pipeline.preprocess import PalmPreprocessor
 from app.pipeline.quantizer import quantize_features
 from app.pipeline.signature import compute_hand_signature_hash
 from app.pipeline.skeleton_graph import extract_candidate_paths
+from app.pipeline.exceptions import PalmLinesNotDetectedError
 
 Handedness = Literal["left", "right", "unknown"]
 
@@ -47,6 +48,16 @@ class PalmAnalysisOrchestrator:
         image_h = float(roi_result.roi_meta.get("image_h", image_bgr.shape[0]))
 
         features = compute_features(mapped_lines, image_w=image_w, image_h=image_h)
+
+        try:
+            detected_lines = int(((features.get("global") or {}).get("detected_lines") or 0))
+        except Exception:
+            detected_lines = 0
+
+        # Guardrail: If we can't extract at least a couple of lines, generating a "reading" is misleading.
+        if detected_lines < 2:
+            raise PalmLinesNotDetectedError("palm_lines_not_detected")
+
         quantized = quantize_features(features)
         signature_hash = compute_hand_signature_hash(quantized)
 

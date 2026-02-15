@@ -141,6 +141,7 @@ class ProcessPalmReadJob implements ShouldQueue
             $msg = mb_strtolower($exception->getMessage());
             $nonRetriable =
                 str_contains($msg, 'hand_not_detected') ||
+                str_contains($msg, 'palm_lines_not_detected') ||
                 str_contains($msg, 'invalid_image') ||
                 str_contains($msg, 'invalid_hand');
 
