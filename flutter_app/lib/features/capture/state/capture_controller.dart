@@ -50,8 +50,14 @@ class CaptureController extends StateNotifier<CaptureState> {
 
   Future<void> setImage(XFile file) async {
     final handedness = state.handedness;
-    // Reset per-image signals so UI doesn't briefly show stale state.
-    state = CaptureState(isEvaluating: true, handedness: handedness);
+    // Set the image immediately so Verify Photo can render it while we run checks.
+    state = CaptureState(
+      imageFile: File(file.path),
+      quality: null,
+      handDetected: null,
+      isEvaluating: true,
+      handedness: handedness,
+    );
     try {
       final bytesFuture = file.readAsBytes();
       final handFuture = PalmDetector.detectHand(file.path);
@@ -68,7 +74,11 @@ class CaptureController extends StateNotifier<CaptureState> {
         isEvaluating: false,
       );
     } catch (_) {
-      state = CaptureState(isEvaluating: false, handedness: handedness);
+      state = CaptureState(
+        imageFile: File(file.path),
+        isEvaluating: false,
+        handedness: handedness,
+      );
     }
   }
 
