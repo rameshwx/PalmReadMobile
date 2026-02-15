@@ -71,8 +71,10 @@ class PreviewScreen extends ConsumerWidget {
       );
     }
 
-    final sharp = quality?.isBlurOk ?? true;
-    final badgeText = sharp ? 'Sharp' : 'Blurry';
+    final sharpOk = quality?.isBlurOk;
+    final checking = state.isEvaluating || sharpOk == null;
+    final badgeText =
+        checking ? 'Checking' : (sharpOk == true ? 'Sharp' : 'Blurry');
     final handDetected = state.handDetected;
     final canUpload = !state.isEvaluating && handDetected != false;
 
@@ -153,7 +155,11 @@ class PreviewScreen extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              sharp ? Icons.check_circle : Icons.error_outline,
+                              checking
+                                  ? Icons.hourglass_top
+                                  : (sharpOk == true
+                                      ? Icons.check_circle
+                                      : Icons.error_outline),
                               size: 16,
                               color: Colors.white,
                             ),
