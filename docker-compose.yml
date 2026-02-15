@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: ${LARAVEL_DB_USERNAME:-palmread}
       POSTGRES_PASSWORD: ${LARAVEL_DB_PASSWORD:-palmread}
     ports:
-      - "5432:5432"
+      # Bind to localhost to avoid exposing DB publicly.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,7 +18,8 @@ services:
     container_name: palmread_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Bind to localhost to avoid exposing Redis publicly.
+      - "127.0.0.1:6379:6379"
 
   laravel_app:
     build:
