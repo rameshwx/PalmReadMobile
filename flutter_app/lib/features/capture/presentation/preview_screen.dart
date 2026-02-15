@@ -53,6 +53,49 @@ class PreviewScreen extends ConsumerWidget {
     await ref.read(captureControllerProvider.notifier).setImage(file);
   }
 
+  Future<void> _maybeConfirmNonHandThenUpload(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool likelyHand,
+  }) async {
+    if (!likelyHand) {
+      final choice = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: const Text("We couldn't detect a hand"),
+            content: const Text(
+              'This photo does not look like a clear palm image. Uploading may fail.\n\n'
+              'Tip: Keep your palm flat, centered, and well-lit.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Retake'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Upload anyway'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (choice == null) return;
+      if (!context.mounted) return;
+      if (choice == false) {
+        await _retake(context, ref);
+        return;
+      }
+    }
+
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const UploadProgressScreen()),
+    );
+  }
+
   void _setHandedness(WidgetRef ref, String value) {
     ref.read(captureControllerProvider.notifier).setHandedness(value);
   }
@@ -280,14 +323,13 @@ class PreviewScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: state.isEvaluating || !likelyHand
+                          onPressed: state.isEvaluating
                               ? null
-                              : () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const UploadProgressScreen(),
-                                    ),
+                              : () async {
+                                  await _maybeConfirmNonHandThenUpload(
+                                    context,
+                                    ref,
+                                    likelyHand: likelyHand,
                                   );
                                 },
                           icon: const Icon(Icons.auto_awesome),
