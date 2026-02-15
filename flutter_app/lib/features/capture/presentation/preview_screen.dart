@@ -253,7 +253,7 @@ class PreviewScreen extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          "We couldn't detect a hand in this photo. Please retake or choose a clear palm image.",
+                          "We couldn't confidently detect a hand in this photo. Please retake or choose a clearer palm image.",
                           style: text.bodyMedium?.copyWith(
                             color: PalmTokens.textMain,
                             fontWeight: FontWeight.w700,
@@ -323,13 +323,14 @@ class PreviewScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: state.isEvaluating
+                          onPressed: state.isEvaluating || !likelyHand
                               ? null
-                              : () async {
-                                  await _maybeConfirmNonHandThenUpload(
-                                    context,
-                                    ref,
-                                    likelyHand: likelyHand,
+                              : () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const UploadProgressScreen(),
+                                    ),
                                   );
                                 },
                           icon: const Icon(Icons.auto_awesome),
@@ -342,6 +343,25 @@ class PreviewScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      if (!state.isEvaluating && !likelyHand) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () async {
+                            await _maybeConfirmNonHandThenUpload(
+                              context,
+                              ref,
+                              likelyHand: false,
+                            );
+                          },
+                          child: Text(
+                            'Upload anyway',
+                            style: text.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: PalmTokens.textSub,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       TextButton(
                         onPressed: () => _retake(context, ref),

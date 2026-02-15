@@ -122,13 +122,24 @@ Map<String, dynamic> _evaluateImageQualityMap(Uint8List bytes) {
         final maxChannel = math.max(r, math.max(g, b));
         final minChannel = math.min(r, math.min(g, b));
 
-        final looksLikeSkin = r > 95 &&
-            g > 40 &&
-            b > 20 &&
-            (maxChannel - minChannel) > 15 &&
-            (r - g).abs() > 15 &&
-            r > g &&
-            r > b;
+        // Simple "likely skin" heuristic used only to estimate palm coverage.
+        // This intentionally aims to be inclusive across different skin tones
+        // and lighting (flash vs ambient), to avoid false "not a hand" warnings.
+        final looksLikeSkinRgb = r > 60 &&
+            g > 30 &&
+            b > 15 &&
+            (maxChannel - minChannel) > 10 &&
+            r >= g &&
+            r >= b;
+
+        // YCbCr skin range (approx). Works better than raw RGB thresholds in
+        // many lighting conditions.
+        final cb = 128 - (0.168736 * r) - (0.331264 * g) + (0.5 * b);
+        final cr = 128 + (0.5 * r) - (0.418688 * g) - (0.081312 * b);
+        final looksLikeSkinYCbCr =
+            (cb >= 70 && cb <= 140) && (cr >= 130 && cr <= 185);
+
+        final looksLikeSkin = looksLikeSkinRgb || looksLikeSkinYCbCr;
 
         if (!looksLikeSkin) {
           continue;

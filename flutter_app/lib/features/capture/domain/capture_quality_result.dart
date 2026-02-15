@@ -20,7 +20,9 @@ class CaptureQualityResult {
   final bool isCentered;
 
   bool get passesHardGates => isBrightnessOk && isBlurOk;
-  bool get isLikelyHand => palmCoverage >= 0.05;
+  // Heuristic: keep this low to reduce false negatives; server-side CV is the
+  // source of truth and will reject non-hand uploads.
+  bool get isLikelyHand => palmCoverage >= 0.02;
 
   factory CaptureQualityResult.fromMap(Map<String, dynamic> map) {
     return CaptureQualityResult(
