@@ -341,6 +341,9 @@ class _HistoryTile extends ConsumerWidget {
     if (lower.contains('hand_not_detected')) {
       return 'No hand detected';
     }
+    if (lower.contains('palm_lines_not_detected')) {
+      return "Couldn't detect palm lines";
+    }
 
     return trimmed;
   }

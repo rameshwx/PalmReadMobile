@@ -217,6 +217,9 @@ class UploadController extends StateNotifier<UploadState> {
     if (lower.contains('hand_not_detected')) {
       return 'No hand detected. Please retake your photo with a clear palm in frame.';
     }
+    if (lower.contains('palm_lines_not_detected')) {
+      return "Couldn't detect palm lines. Please retake with better lighting and focus.";
+    }
     if (lower.contains('blur')) {
       return 'Image looks blurry. Please retake with better focus.';
     }
