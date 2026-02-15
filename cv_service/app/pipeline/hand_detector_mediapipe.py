@@ -83,15 +83,44 @@ class MediaPipeHandDetector:
         if max_tip_dist < (0.22 * max(bbox_w_tight, bbox_h_tight)):
             raise HandNotDetectedError("hand_not_detected_short_finger_span")
 
-        # Expanded crop bbox (padding relative to tight bbox size).
-        pad_x = 0.18 * bbox_w_tight
-        pad_y_top = 0.20 * bbox_h_tight
-        pad_y_bottom = 0.22 * bbox_h_tight
+        # Prefer a palm-focused crop for line extraction.
+        # Using all landmarks (including fingertips) makes y-position heuristics
+        # unstable and increases background noise.
+        palm_indices = [0, 1, 2, 5, 9, 13, 17]  # wrist + palm base joints
+        palm_pts = pts[palm_indices, :]
 
-        x_min = max(int(x0 - pad_x), 0)
-        y_min = max(int(y0 - pad_y_top), 0)
-        x_max = min(int(x1 + pad_x), image_w)
-        y_max = min(int(y1 + pad_y_bottom), image_h)
+        px0 = float(np.min(palm_pts[:, 0]))
+        py0 = float(np.min(palm_pts[:, 1]))
+        px1 = float(np.max(palm_pts[:, 0]))
+        py1 = float(np.max(palm_pts[:, 1]))
+
+        bbox_w_palm = float(max(1.0, px1 - px0))
+        bbox_h_palm = float(max(1.0, py1 - py0))
+
+        # If the palm bbox degenerates (rare), fall back to full-hand bbox.
+        use_palm_crop = (bbox_w_palm >= 0.35 * bbox_w_tight) and (bbox_h_palm >= 0.35 * bbox_h_tight)
+        if use_palm_crop:
+            warnings.append("roi_crop:palm")
+            # Expanded palm crop bbox (padding relative to palm bbox size).
+            pad_x = 0.26 * bbox_w_palm
+            pad_y_top = 0.34 * bbox_h_palm
+            pad_y_bottom = 0.26 * bbox_h_palm
+
+            x_min = max(int(px0 - pad_x), 0)
+            y_min = max(int(py0 - pad_y_top), 0)
+            x_max = min(int(px1 + pad_x), image_w)
+            y_max = min(int(py1 + pad_y_bottom), image_h)
+        else:
+            warnings.append("roi_crop:hand")
+            # Expanded crop bbox (padding relative to tight landmark bbox size).
+            pad_x = 0.18 * bbox_w_tight
+            pad_y_top = 0.20 * bbox_h_tight
+            pad_y_bottom = 0.22 * bbox_h_tight
+
+            x_min = max(int(x0 - pad_x), 0)
+            y_min = max(int(y0 - pad_y_top), 0)
+            x_max = min(int(x1 + pad_x), image_w)
+            y_max = min(int(y1 + pad_y_bottom), image_h)
 
         if x_max <= x_min or y_max <= y_min:
             raise HandNotDetectedError("hand_not_detected_invalid_bbox")

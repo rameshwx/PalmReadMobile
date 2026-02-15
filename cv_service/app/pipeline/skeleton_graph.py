@@ -26,7 +26,9 @@ def extract_candidate_paths(binary_map: np.ndarray, roi_size: int) -> List[np.nd
     skeleton = _morphological_skeleton(binary_map)
 
     contours, _ = cv2.findContours(skeleton, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-    min_arc = roi_size * 0.12
+    # Slightly more permissive than before; palms often produce broken contours
+    # under imperfect lighting.
+    min_arc = roi_size * 0.09
 
     candidates: List[np.ndarray] = []
     for contour in contours:

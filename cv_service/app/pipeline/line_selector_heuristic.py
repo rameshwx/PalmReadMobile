@@ -72,7 +72,11 @@ class HeuristicLineSelector:
                     best_idx = idx
                     best_score = base
 
-            if best_idx == -1 or best_score < 0.35:
+            min_score = 0.28
+            if key in ("fate", "sun"):
+                min_score = 0.24
+
+            if best_idx == -1 or best_score < min_score:
                 results.append(LineCandidate(key=key, confidence=0.1, points_roi=[]))
                 continue
 

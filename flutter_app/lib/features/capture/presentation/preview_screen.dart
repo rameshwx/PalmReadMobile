@@ -73,7 +73,8 @@ class PreviewScreen extends ConsumerWidget {
 
     final sharp = quality?.isBlurOk ?? true;
     final badgeText = sharp ? 'Sharp' : 'Blurry';
-    final handDetected = state.handDetected ?? true;
+    final handDetected = state.handDetected;
+    final canUpload = !state.isEvaluating && handDetected != false;
 
     return Scaffold(
       appBar: AppBar(
@@ -193,7 +194,7 @@ class PreviewScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (!handDetected) ...[
+              if (handDetected == false) ...[
                 const SizedBox(height: 14),
                 Container(
                   padding:
@@ -211,6 +212,37 @@ class PreviewScreen extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           "We couldn't detect a hand in this photo. Please retake or choose a clear palm image.",
+                          style: text.bodyMedium?.copyWith(
+                            color: PalmTokens.textMain,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (handDetected == null && !state.isEvaluating) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: PalmTokens.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: PalmTokens.primary.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline,
+                          color: PalmTokens.primaryDark),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          "Hand check isn't available on this device. We'll validate the image after upload.",
                           style: text.bodyMedium?.copyWith(
                             color: PalmTokens.textMain,
                             fontWeight: FontWeight.w700,
@@ -280,9 +312,8 @@ class PreviewScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: state.isEvaluating || !handDetected
-                              ? null
-                              : () async {
+                          onPressed: canUpload
+                              ? () async {
                                   final error =
                                       await Navigator.of(context).push<String?>(
                                     MaterialPageRoute(
@@ -295,7 +326,8 @@ class PreviewScreen extends ConsumerWidget {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(error)),
                                   );
-                                },
+                                }
+                              : null,
                           icon: const Icon(Icons.auto_awesome),
                           label: const Text('Upload for Analysis'),
                           style: FilledButton.styleFrom(

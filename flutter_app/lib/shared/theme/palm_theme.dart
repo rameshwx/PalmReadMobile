@@ -57,15 +57,29 @@ class PalmTheme {
         space: 1,
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: PalmTokens.primary,
-          foregroundColor: PalmTokens.neutralDark,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          textStyle: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return PalmTokens.primary.withValues(alpha: 0.35);
+            }
+            return PalmTokens.primary;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return PalmTokens.neutralDark.withValues(alpha: 0.55);
+            }
+            return PalmTokens.neutralDark;
+          }),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(PalmTokens.radiusMd),
+          textStyle: WidgetStatePropertyAll(
+            textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(PalmTokens.radiusMd),
+            ),
           ),
         ),
       ),

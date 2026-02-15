@@ -32,9 +32,9 @@ class PalmDetector(
             .setRunningMode(RunningMode.IMAGE)
             .setNumHands(1)
             // Keep these permissive to avoid blocking real palm photos.
-            .setMinHandDetectionConfidence(0.50f)
-            .setMinHandPresenceConfidence(0.50f)
-            .setMinTrackingConfidence(0.50f)
+            .setMinHandDetectionConfidence(0.25f)
+            .setMinHandPresenceConfidence(0.25f)
+            .setMinTrackingConfidence(0.25f)
             .build()
 
         val created = HandLandmarker.createFromOptions(context, options)
@@ -43,7 +43,7 @@ class PalmDetector(
     }
 
     fun detectHand(imagePath: String): Boolean {
-        val bitmap = loadBitmapWithExifRotation(imagePath, maxSide = 1024)
+        val bitmap = loadBitmapWithExifRotation(imagePath, maxSide = 1536)
         val mpImage = BitmapImageBuilder(bitmap).build()
         val result = getLandmarker().detect(mpImage)
         return result.landmarks().isNotEmpty()
@@ -99,4 +99,3 @@ class PalmDetector(
         return rotated
     }
 }
-
