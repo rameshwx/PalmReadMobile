@@ -38,6 +38,17 @@ class PreviewScreen extends ConsumerWidget {
     );
 
     if (result == null) return;
+    if (!context.mounted) return;
+
+    // We now do in-app camera capture on the Capture screen. For retake-from-camera,
+    // jump back to Capture instead of launching the OS camera UI.
+    if (result == ImageSource.camera) {
+      ref.read(captureControllerProvider.notifier).clear();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
 
     final picker = ImagePicker();
     final file = await picker.pickImage(
