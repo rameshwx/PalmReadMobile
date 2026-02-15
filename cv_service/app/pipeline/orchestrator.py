@@ -37,22 +37,43 @@ class PalmAnalysisOrchestrator:
         image_bgr = self._resize_if_needed(image_bgr)
 
         roi_result = self.detector.detect(image_bgr, self.roi_size, handedness_hint)
-        binary = self.preprocessor.run(roi_result.roi)
-        candidates = extract_candidate_paths(binary, self.roi_size)
-        selected_lines = self.selector.select(candidates, self.roi_size)
-        mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
 
-        detected_lines = sum(
-            1
-            for line in mapped_lines
-            if not bool(line.get("missing", False)) and isinstance(line.get("points"), list) and len(line["points"]) >= 2
-        )
+        best_variant = None
+        best_mapped_lines = None
+        best_detected_lines = -1
+
+        for variant_name, binary in self.preprocessor.run_variants(roi_result.roi):
+            candidates = extract_candidate_paths(binary, self.roi_size)
+            selected_lines = self.selector.select(candidates, self.roi_size)
+            mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
+
+            detected_lines = sum(
+                1
+                for line in mapped_lines
+                if not bool(line.get("missing", False))
+                and isinstance(line.get("points"), list)
+                and len(line["points"]) >= 2
+            )
+
+            if detected_lines > best_detected_lines:
+                best_detected_lines = detected_lines
+                best_mapped_lines = mapped_lines
+                best_variant = variant_name
+
+            # Early-exit as soon as we pass the guardrail.
+            if detected_lines >= 2:
+                break
+
+        mapped_lines = best_mapped_lines or []
+        detected_lines = max(0, int(best_detected_lines))
 
         # Guardrail: If we can't extract at least a couple of lines, generating a "reading" is misleading.
         if detected_lines < 2:
             raise PalmLinesNotDetectedError("palm_lines_not_detected")
 
         warnings = list(roi_result.warnings)
+        if best_variant:
+            warnings.append(f"preprocess:{best_variant}")
         missing_count = sum(1 for line in mapped_lines if bool(line.get("missing", False)))
         if missing_count > 0:
             warnings.append(f"missing_lines:{missing_count}")
@@ -78,21 +99,39 @@ class PalmAnalysisOrchestrator:
         image_bgr = self._resize_if_needed(image_bgr)
 
         roi_result = self.detector.detect(image_bgr, self.roi_size, handedness_hint)
-        binary = self.preprocessor.run(roi_result.roi)
-        candidates = extract_candidate_paths(binary, self.roi_size)
-        selected_lines = self.selector.select(candidates, self.roi_size)
 
-        mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
+        best_variant = None
+        best_mapped_lines = None
+        best_detected_lines = -1
+
+        for variant_name, binary in self.preprocessor.run_variants(roi_result.roi):
+            candidates = extract_candidate_paths(binary, self.roi_size)
+            selected_lines = self.selector.select(candidates, self.roi_size)
+            mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
+
+            detected_lines = sum(
+                1
+                for line in mapped_lines
+                if not bool(line.get("missing", False))
+                and isinstance(line.get("points"), list)
+                and len(line["points"]) >= 2
+            )
+
+            if detected_lines > best_detected_lines:
+                best_detected_lines = detected_lines
+                best_mapped_lines = mapped_lines
+                best_variant = variant_name
+
+            if detected_lines >= 2:
+                break
+
+        mapped_lines = best_mapped_lines or []
 
         image_w = float(roi_result.roi_meta.get("image_w", image_bgr.shape[1]))
         image_h = float(roi_result.roi_meta.get("image_h", image_bgr.shape[0]))
 
         features = compute_features(mapped_lines, image_w=image_w, image_h=image_h)
-
-        try:
-            detected_lines = int(((features.get("global") or {}).get("detected_lines") or 0))
-        except Exception:
-            detected_lines = 0
+        detected_lines = max(0, int(best_detected_lines))
 
         # Guardrail: If we can't extract at least a couple of lines, generating a "reading" is misleading.
         if detected_lines < 2:
@@ -102,6 +141,8 @@ class PalmAnalysisOrchestrator:
         signature_hash = compute_hand_signature_hash(quantized)
 
         warnings = list(roi_result.warnings)
+        if best_variant:
+            warnings.append(f"preprocess:{best_variant}")
         missing_count = sum(1 for line in mapped_lines if bool(line.get("missing", False)))
         if missing_count > 0:
             warnings.append(f"missing_lines:{missing_count}")

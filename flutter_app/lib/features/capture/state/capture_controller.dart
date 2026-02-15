@@ -49,20 +49,26 @@ class CaptureController extends StateNotifier<CaptureState> {
   CaptureController() : super(const CaptureState());
 
   Future<void> setImage(XFile file) async {
-    state = state.copyWith(isEvaluating: true);
+    final handedness = state.handedness;
+    // Reset per-image signals so UI doesn't briefly show stale state.
+    state = CaptureState(isEvaluating: true, handedness: handedness);
     try {
-      final bytes = await file.readAsBytes();
+      final bytesFuture = file.readAsBytes();
+      final handFuture = PalmDetector.detectHand(file.path);
+
+      final bytes = await bytesFuture;
       final quality = await ImageQuality.evaluateAsync(bytes);
-      final handDetected =
-          await PalmDetector.detectHand(file.path) ?? true; // fallback: allow
-      state = state.copyWith(
+      final handDetected = await handFuture;
+
+      state = CaptureState(
         imageFile: File(file.path),
         quality: quality,
         handDetected: handDetected,
+        handedness: handedness,
         isEvaluating: false,
       );
     } catch (_) {
-      state = state.copyWith(isEvaluating: false);
+      state = CaptureState(isEvaluating: false, handedness: handedness);
     }
   }
 
