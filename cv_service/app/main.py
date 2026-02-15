@@ -7,6 +7,7 @@ from app.api.schemas import AnalyzeRequest, AnalyzeResponse
 from app.core.config import get_settings
 from app.core.logging import CorrelationLoggerAdapter, configure_logging
 from app.pipeline.determinism import configure_determinism
+from app.pipeline.exceptions import HandNotDetectedError
 from app.pipeline.orchestrator import PalmAnalysisOrchestrator
 
 settings = get_settings()
@@ -37,6 +38,9 @@ def analyze(payload: AnalyzeRequest, x_correlation_id: Optional[str] = Header(de
         result = orchestrator.analyze(payload.local_path, handedness_hint=handedness_hint)
         log.info("Analysis complete", extra={"processing_ms": result["processing_ms"]})
         return AnalyzeResponse(**result)
+    except HandNotDetectedError as exc:
+        log.info("Hand not detected", extra={"reason": str(exc)})
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except FileNotFoundError as exc:
         log.warning("Analyze failed file not found: %s", exc)
         raise HTTPException(status_code=404, detail=str(exc)) from exc

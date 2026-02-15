@@ -26,6 +26,16 @@ class CvClient
         }
 
         if (! $response->successful()) {
+            $payload = $response->json();
+            $detail = null;
+            if (is_array($payload)) {
+                $detail = $payload['detail'] ?? $payload['message'] ?? null;
+            }
+
+            if (is_string($detail) && $detail !== '') {
+                throw new RuntimeException($detail);
+            }
+
             throw new RuntimeException('CV service failed with status '.$response->status());
         }
 

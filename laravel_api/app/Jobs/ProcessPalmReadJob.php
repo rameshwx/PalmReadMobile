@@ -138,6 +138,17 @@ class ProcessPalmReadJob implements ShouldQueue
                 'error' => $exception->getMessage(),
             ]);
 
+            $msg = mb_strtolower($exception->getMessage());
+            $nonRetriable =
+                str_contains($msg, 'hand_not_detected') ||
+                str_contains($msg, 'invalid_image') ||
+                str_contains($msg, 'invalid_hand');
+
+            if ($nonRetriable) {
+                // User submitted an invalid input. Retrying won't help.
+                return;
+            }
+
             throw $exception;
         }
     }
