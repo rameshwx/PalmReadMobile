@@ -20,7 +20,8 @@ class MediaPipeHandDetector:
                 static_image_mode=True,
                 max_num_hands=1,
                 model_complexity=1,
-                min_detection_confidence=0.75,
+                # Higher threshold reduces false positives on non-hand images.
+                min_detection_confidence=0.85,
             )
 
     def detect(self, image_bgr: np.ndarray, roi_size: int, handedness_hint: Handedness) -> RoiResult:
@@ -57,13 +58,38 @@ class MediaPipeHandDetector:
         if x_max <= x_min or y_max <= y_min:
             raise HandNotDetectedError("hand_not_detected_invalid_bbox")
 
-        bbox_area = float((x_max - x_min) * (y_max - y_min))
+        bbox_w = float(x_max - x_min)
+        bbox_h = float(y_max - y_min)
+        bbox_area = float(bbox_w * bbox_h)
         image_area = float(image_w * image_h)
         if image_area > 0:
             frac = bbox_area / image_area
             # Too small: likely a false positive. Too large: likely a bad crop.
             if frac < 0.08 or frac > 0.98:
                 raise HandNotDetectedError("hand_not_detected_bad_bbox_area")
+
+        # Landmark sanity checks. MediaPipe can occasionally return false positives on
+        # non-hand images; these heuristics reduce that while remaining tolerant of
+        # different orientations and lighting.
+        pts = np.array(
+            [(lm.x * image_w, lm.y * image_h) for lm in landmarks.landmark],
+            dtype=np.float32,
+        )
+        if pts.shape[0] < 21:
+            raise HandNotDetectedError("hand_not_detected_missing_landmarks")
+
+        bbox_area_px = float(max(1.0, bbox_w * bbox_h))
+        hull = cv2.convexHull(pts)
+        hull_area = float(cv2.contourArea(hull))
+        fill_ratio = hull_area / bbox_area_px
+        if fill_ratio < 0.12:
+            raise HandNotDetectedError("hand_not_detected_low_landmark_fill")
+
+        wrist = pts[0]
+        tip_indices = [4, 8, 12, 16, 20]
+        max_tip_dist = float(max(np.linalg.norm(pts[i] - wrist) for i in tip_indices))
+        if max_tip_dist < (0.26 * max(bbox_w, bbox_h)):
+            raise HandNotDetectedError("hand_not_detected_short_finger_span")
 
         crop = image_bgr[y_min:y_max, x_min:x_max]
         roi = cv2.resize(crop, (roi_size, roi_size), interpolation=cv2.INTER_AREA)
