@@ -333,6 +333,18 @@ class _HistoryTile extends ConsumerWidget {
     }
   }
 
+  String _friendlyFailureReason(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return '';
+
+    final lower = trimmed.toLowerCase();
+    if (lower.contains('hand_not_detected')) {
+      return 'No hand detected';
+    }
+
+    return trimmed;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = item.status;
@@ -346,7 +358,7 @@ class _HistoryTile extends ConsumerWidget {
             ? _BadgeMeta('Failed', PalmTokens.danger)
             : _BadgeMeta('Processing', PalmTokens.warning);
 
-    final failureReason = (item.failureReason ?? '').trim();
+    final failureReason = _friendlyFailureReason(item.failureReason ?? '');
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),

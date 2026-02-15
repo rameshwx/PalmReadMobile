@@ -176,9 +176,10 @@ class UploadController extends StateNotifier<UploadState> {
         return;
       }
       if (detail.status == 'failed') {
+        final friendly = _friendlyFailureReason(detail.failureReason);
         state = state.copyWith(
           status: 'failed',
-          error: detail.failureReason ?? 'CV failed',
+          error: friendly ?? 'Analysis failed',
         );
         return;
       }
@@ -205,5 +206,20 @@ class UploadController extends StateNotifier<UploadState> {
     _cancelToken?.cancel('reset');
     _cancelToken = null;
     state = const UploadState();
+  }
+
+  static String? _friendlyFailureReason(String? reason) {
+    if (reason == null) return null;
+    final r = reason.trim();
+    if (r.isEmpty) return null;
+
+    final lower = r.toLowerCase();
+    if (lower.contains('hand_not_detected')) {
+      return 'No hand detected. Please retake your photo with a clear palm in frame.';
+    }
+    if (lower.contains('blur')) {
+      return 'Image looks blurry. Please retake with better focus.';
+    }
+    return r;
   }
 }

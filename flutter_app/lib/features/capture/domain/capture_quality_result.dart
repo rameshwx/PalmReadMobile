@@ -20,6 +20,7 @@ class CaptureQualityResult {
   final bool isCentered;
 
   bool get passesHardGates => isBrightnessOk && isBlurOk;
+  bool get isLikelyHand => palmCoverage >= 0.05;
 
   factory CaptureQualityResult.fromMap(Map<String, dynamic> map) {
     return CaptureQualityResult(

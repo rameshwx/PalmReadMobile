@@ -72,6 +72,7 @@ class PreviewScreen extends ConsumerWidget {
 
     final sharp = quality?.isBlurOk ?? true;
     final badgeText = sharp ? 'Sharp' : 'Blurry';
+    final likelyHand = quality?.isLikelyHand ?? true;
 
     return Scaffold(
       appBar: AppBar(
@@ -191,6 +192,35 @@ class PreviewScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (!likelyHand) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: PalmTokens.danger.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: PalmTokens.danger.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: PalmTokens.danger),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          "We couldn't detect a hand in this photo. Please retake or choose a clear palm image.",
+                          style: text.bodyMedium?.copyWith(
+                            color: PalmTokens.textMain,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 22),
               Row(
                 children: [
@@ -249,7 +279,7 @@ class PreviewScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: state.isEvaluating
+                          onPressed: state.isEvaluating || !likelyHand
                               ? null
                               : () {
                                   Navigator.of(context).push(
