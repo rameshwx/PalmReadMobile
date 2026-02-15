@@ -116,7 +116,13 @@ class UploadController extends StateNotifier<UploadState> {
         return;
       }
 
-      state = state.copyWith(status: 'failed', error: e.toString());
+      final detail = _extractErrorDetail(e.response?.data);
+      final friendly =
+          _friendlyFailureReason(detail) ?? _friendlyFailureReason(e.toString());
+      state = state.copyWith(
+        status: 'failed',
+        error: friendly ?? detail ?? e.toString(),
+      );
     } catch (e) {
       state = state.copyWith(status: 'failed', error: e.toString());
     }
@@ -151,7 +157,13 @@ class UploadController extends StateNotifier<UploadState> {
         return;
       }
 
-      state = state.copyWith(status: 'failed', error: e.toString());
+      final detail = _extractErrorDetail(e.response?.data);
+      final friendly =
+          _friendlyFailureReason(detail) ?? _friendlyFailureReason(e.toString());
+      state = state.copyWith(
+        status: 'failed',
+        error: friendly ?? detail ?? e.toString(),
+      );
     } catch (e) {
       state = state.copyWith(status: 'failed', error: e.toString());
     }
@@ -206,6 +218,25 @@ class UploadController extends StateNotifier<UploadState> {
     _cancelToken?.cancel('reset');
     _cancelToken = null;
     state = const UploadState();
+  }
+
+  static String? _extractErrorDetail(dynamic data) {
+    try {
+      if (data is Map) {
+        final v = data['detail'] ?? data['message'] ?? data['error'];
+        if (v != null) {
+          final s = v.toString().trim();
+          return s.isEmpty ? null : s;
+        }
+      }
+      if (data is String) {
+        final s = data.trim();
+        return s.isEmpty ? null : s;
+      }
+    } catch (_) {
+      // Ignore parsing errors; fall back to DioException.toString().
+    }
+    return null;
   }
 
   static String? _friendlyFailureReason(String? reason) {

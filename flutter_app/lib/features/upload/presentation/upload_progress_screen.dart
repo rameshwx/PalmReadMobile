@@ -24,6 +24,14 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
   late final AnimationController _spin;
   late final ProviderSubscription<UploadState> _uploadSub;
 
+  bool _isInvalidInputError(String message) {
+    final lower = message.toLowerCase();
+    return lower.contains('hand_not_detected') ||
+        lower.contains('palm_lines_not_detected') ||
+        lower.contains('no hand detected') ||
+        lower.contains('palm lines');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,9 +64,15 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
           next.status == 'failed' &&
           next.error != null &&
           next.error!.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error!)),
-        );
+        final msg = next.error!;
+        if (_isInvalidInputError(msg) && Navigator.of(context).canPop()) {
+          ref.read(uploadControllerProvider.notifier).reset();
+          Navigator.of(context).pop<String>(msg);
+          return;
+        }
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
       }
     });
   }

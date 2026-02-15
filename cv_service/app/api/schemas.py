@@ -9,6 +9,12 @@ class AnalyzeRequest(BaseModel):
     correlation_id: Optional[str] = None
 
 
+class ValidateRequest(BaseModel):
+    local_path: str = Field(..., description="Absolute local path to image file")
+    handedness_hint: Optional[Literal["left", "right", "unknown"]] = "unknown"
+    correlation_id: Optional[str] = None
+
+
 class Point(BaseModel):
     x: float
     y: float
@@ -28,5 +34,13 @@ class AnalyzeResponse(BaseModel):
     features: Dict[str, Any]
     quantized_buckets: Dict[str, Any]
     hand_signature_hash: str
+    processing_ms: int
+    warnings: List[str] = []
+
+
+class ValidateResponse(BaseModel):
+    handedness: Literal["left", "right", "unknown"]
+    roi_meta: Dict[str, Any]
+    detected_lines: int
     processing_ms: int
     warnings: List[str] = []

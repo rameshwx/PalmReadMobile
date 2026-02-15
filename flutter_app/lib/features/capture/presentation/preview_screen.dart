@@ -53,49 +53,6 @@ class PreviewScreen extends ConsumerWidget {
     await ref.read(captureControllerProvider.notifier).setImage(file);
   }
 
-  Future<void> _maybeConfirmNonHandThenUpload(
-    BuildContext context,
-    WidgetRef ref, {
-    required bool likelyHand,
-  }) async {
-    if (!likelyHand) {
-      final choice = await showDialog<bool>(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            title: const Text("We couldn't detect a hand"),
-            content: const Text(
-              'This photo does not look like a clear palm image. Uploading may fail.\n\n'
-              'Tip: Keep your palm flat, centered, and well-lit.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Retake'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Upload anyway'),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (choice == null) return;
-      if (!context.mounted) return;
-      if (choice == false) {
-        await _retake(context, ref);
-        return;
-      }
-    }
-
-    if (!context.mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const UploadProgressScreen()),
-    );
-  }
-
   void _setHandedness(WidgetRef ref, String value) {
     ref.read(captureControllerProvider.notifier).setHandedness(value);
   }
@@ -116,7 +73,6 @@ class PreviewScreen extends ConsumerWidget {
 
     final sharp = quality?.isBlurOk ?? true;
     final badgeText = sharp ? 'Sharp' : 'Blurry';
-    final likelyHand = quality?.isLikelyHand ?? true;
 
     return Scaffold(
       appBar: AppBar(
@@ -236,35 +192,6 @@ class PreviewScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (!likelyHand) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: PalmTokens.danger.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: PalmTokens.danger.withValues(alpha: 0.25)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: PalmTokens.danger),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          "We couldn't confidently detect a hand in this photo. Please retake or choose a clearer palm image.",
-                          style: text.bodyMedium?.copyWith(
-                            color: PalmTokens.textMain,
-                            fontWeight: FontWeight.w700,
-                            height: 1.25,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
               const SizedBox(height: 22),
               Row(
                 children: [
@@ -323,14 +250,20 @@ class PreviewScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: state.isEvaluating || !likelyHand
+                          onPressed: state.isEvaluating
                               ? null
-                              : () {
-                                  Navigator.of(context).push(
+                              : () async {
+                                  final error =
+                                      await Navigator.of(context).push<String?>(
                                     MaterialPageRoute(
                                       builder: (_) =>
                                           const UploadProgressScreen(),
                                     ),
+                                  );
+                                  if (!context.mounted) return;
+                                  if (error == null || error.isEmpty) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(error)),
                                   );
                                 },
                           icon: const Icon(Icons.auto_awesome),
@@ -343,25 +276,6 @@ class PreviewScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      if (!state.isEvaluating && !likelyHand) ...[
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () async {
-                            await _maybeConfirmNonHandThenUpload(
-                              context,
-                              ref,
-                              likelyHand: false,
-                            );
-                          },
-                          child: Text(
-                            'Upload anyway',
-                            style: text.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: PalmTokens.textSub,
-                            ),
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 10),
                       TextButton(
                         onPressed: () => _retake(context, ref),
