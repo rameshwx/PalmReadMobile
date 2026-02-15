@@ -20,8 +20,8 @@ class MediaPipeHandDetector:
                 static_image_mode=True,
                 max_num_hands=1,
                 model_complexity=1,
-                # Higher threshold reduces false positives on non-hand images.
-                min_detection_confidence=0.85,
+                # Keep this moderate to reduce false negatives on real palm photos.
+                min_detection_confidence=0.70,
             )
 
     def detect(self, image_bgr: np.ndarray, roi_size: int, handedness_hint: Handedness) -> RoiResult:
@@ -47,30 +47,6 @@ class MediaPipeHandDetector:
             handedness_score = float(getattr(cls, "score", 0.0) or 0.0)
 
         landmarks = result.multi_hand_landmarks[0]
-        xs = [lm.x for lm in landmarks.landmark]
-        ys = [lm.y for lm in landmarks.landmark]
-
-        x_min = max(int((min(xs) - 0.18) * image_w), 0)
-        y_min = max(int((min(ys) - 0.20) * image_h), 0)
-        x_max = min(int((max(xs) + 0.18) * image_w), image_w)
-        y_max = min(int((max(ys) + 0.22) * image_h), image_h)
-
-        if x_max <= x_min or y_max <= y_min:
-            raise HandNotDetectedError("hand_not_detected_invalid_bbox")
-
-        bbox_w = float(x_max - x_min)
-        bbox_h = float(y_max - y_min)
-        bbox_area = float(bbox_w * bbox_h)
-        image_area = float(image_w * image_h)
-        if image_area > 0:
-            frac = bbox_area / image_area
-            # Too small: likely a false positive. Too large: likely a bad crop.
-            if frac < 0.08 or frac > 0.98:
-                raise HandNotDetectedError("hand_not_detected_bad_bbox_area")
-
-        # Landmark sanity checks. MediaPipe can occasionally return false positives on
-        # non-hand images; these heuristics reduce that while remaining tolerant of
-        # different orientations and lighting.
         pts = np.array(
             [(lm.x * image_w, lm.y * image_h) for lm in landmarks.landmark],
             dtype=np.float32,
@@ -78,18 +54,47 @@ class MediaPipeHandDetector:
         if pts.shape[0] < 21:
             raise HandNotDetectedError("hand_not_detected_missing_landmarks")
 
-        bbox_area_px = float(max(1.0, bbox_w * bbox_h))
+        # Use the tight landmark bbox for heuristics (expanded crop bbox is computed later).
+        x0 = float(np.min(pts[:, 0]))
+        y0 = float(np.min(pts[:, 1]))
+        x1 = float(np.max(pts[:, 0]))
+        y1 = float(np.max(pts[:, 1]))
+
+        bbox_w_tight = float(max(1.0, x1 - x0))
+        bbox_h_tight = float(max(1.0, y1 - y0))
+        bbox_area_px = float(bbox_w_tight * bbox_h_tight)
+
+        image_area = float(image_w * image_h)
+        if image_area > 0:
+            frac = bbox_area_px / image_area
+            # Too small: likely a false positive.
+            if frac < 0.04:
+                raise HandNotDetectedError("hand_not_detected_bad_bbox_area")
+
         hull = cv2.convexHull(pts)
         hull_area = float(cv2.contourArea(hull))
         fill_ratio = hull_area / bbox_area_px
-        if fill_ratio < 0.12:
+        if fill_ratio < 0.08:
             raise HandNotDetectedError("hand_not_detected_low_landmark_fill")
 
         wrist = pts[0]
         tip_indices = [4, 8, 12, 16, 20]
         max_tip_dist = float(max(np.linalg.norm(pts[i] - wrist) for i in tip_indices))
-        if max_tip_dist < (0.26 * max(bbox_w, bbox_h)):
+        if max_tip_dist < (0.22 * max(bbox_w_tight, bbox_h_tight)):
             raise HandNotDetectedError("hand_not_detected_short_finger_span")
+
+        # Expanded crop bbox (padding relative to tight bbox size).
+        pad_x = 0.18 * bbox_w_tight
+        pad_y_top = 0.20 * bbox_h_tight
+        pad_y_bottom = 0.22 * bbox_h_tight
+
+        x_min = max(int(x0 - pad_x), 0)
+        y_min = max(int(y0 - pad_y_top), 0)
+        x_max = min(int(x1 + pad_x), image_w)
+        y_max = min(int(y1 + pad_y_bottom), image_h)
+
+        if x_max <= x_min or y_max <= y_min:
+            raise HandNotDetectedError("hand_not_detected_invalid_bbox")
 
         crop = image_bgr[y_min:y_max, x_min:x_max]
         roi = cv2.resize(crop, (roi_size, roi_size), interpolation=cv2.INTER_AREA)

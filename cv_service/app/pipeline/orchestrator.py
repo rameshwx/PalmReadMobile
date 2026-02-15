@@ -3,6 +3,7 @@ import time
 from typing import Any, Dict, Literal
 
 import cv2
+import numpy as np
 
 from app.pipeline.features import compute_features
 from app.pipeline.hand_detector_mediapipe import MediaPipeHandDetector
@@ -31,9 +32,7 @@ class PalmAnalysisOrchestrator:
         if not os.path.exists(local_path):
             raise FileNotFoundError(f"Image path not found: {local_path}")
 
-        image_bgr = cv2.imread(local_path)
-        if image_bgr is None:
-            raise ValueError("Failed to read image with OpenCV.")
+        image_bgr = self._read_image_bgr(local_path)
 
         image_bgr = self._resize_if_needed(image_bgr)
 
@@ -74,9 +73,7 @@ class PalmAnalysisOrchestrator:
         if not os.path.exists(local_path):
             raise FileNotFoundError(f"Image path not found: {local_path}")
 
-        image_bgr = cv2.imread(local_path)
-        if image_bgr is None:
-            raise ValueError("Failed to read image with OpenCV.")
+        image_bgr = self._read_image_bgr(local_path)
 
         image_bgr = self._resize_if_needed(image_bgr)
 
@@ -132,3 +129,23 @@ class PalmAnalysisOrchestrator:
         new_w = max(1, int(w * scale))
         new_h = max(1, int(h * scale))
         return cv2.resize(image_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    def _read_image_bgr(self, local_path: str) -> np.ndarray:
+        """
+        OpenCV does not honor EXIF orientation. Most mobile camera images rely on EXIF
+        rotation, so we transpose using Pillow when available.
+        """
+        try:
+            from PIL import Image, ImageOps  # type: ignore
+
+            with Image.open(local_path) as im:
+                im = ImageOps.exif_transpose(im)
+                im = im.convert("RGB")
+                arr = np.asarray(im)
+                bgr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+                return bgr
+        except Exception:
+            image_bgr = cv2.imread(local_path)
+            if image_bgr is None:
+                raise ValueError("Failed to read image.")  # noqa: B904
+            return image_bgr
