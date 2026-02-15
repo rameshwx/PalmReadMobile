@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.palm_read_mobile"
+    namespace = "com.rameshwx.palm_read_mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -20,8 +20,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.palm_read_mobile"
+        applicationId = "com.rameshwx.palm_read_mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
