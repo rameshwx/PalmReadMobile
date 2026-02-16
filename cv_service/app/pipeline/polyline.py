@@ -63,7 +63,9 @@ def _map_point_to_original(point: Point, roi_meta: Dict[str, float]) -> Point:
 
 def simplify_and_map_lines(lines: List[LineCandidate], roi_meta: Dict[str, float]) -> List[Dict[str, object]]:
     roi_size = float(roi_meta.get("roi_size", 512.0))
-    epsilon = ((roi_size**2 + roi_size**2) ** 0.5) * 0.01
+    # Keep more vertices to avoid collapsing palm creases into nearly straight
+    # 2-point segments on the result overlay.
+    epsilon = ((roi_size**2 + roi_size**2) ** 0.5) * 0.0035
 
     out: List[Dict[str, object]] = []
     for line in lines:
@@ -79,6 +81,11 @@ def simplify_and_map_lines(lines: List[LineCandidate], roi_meta: Dict[str, float
             continue
 
         simplified = rdp(line.points_roi, epsilon)
+        if len(simplified) > 120:
+            step = max(1, len(simplified) // 120)
+            simplified = simplified[::step]
+            if simplified[-1] != line.points_roi[-1]:
+                simplified.append(line.points_roi[-1])
         mapped_points = [
             {"x": float(x), "y": float(y)} for x, y in (_map_point_to_original(p, roi_meta) for p in simplified)
         ]

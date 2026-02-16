@@ -44,7 +44,12 @@ class PalmAnalysisOrchestrator:
 
         for variant_name, binary in self.preprocessor.run_variants(roi_result.roi):
             candidates = extract_candidate_paths(binary, self.roi_size)
-            selected_lines = self.selector.select(candidates, self.roi_size)
+            selected_lines = self.selector.select(
+                candidates,
+                self.roi_size,
+                landmarks_roi=roi_result.landmarks_roi,
+                handedness=roi_result.handedness,
+            )
             mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
 
             detected_lines = sum(
@@ -106,7 +111,12 @@ class PalmAnalysisOrchestrator:
 
         for variant_name, binary in self.preprocessor.run_variants(roi_result.roi):
             candidates = extract_candidate_paths(binary, self.roi_size)
-            selected_lines = self.selector.select(candidates, self.roi_size)
+            selected_lines = self.selector.select(
+                candidates,
+                self.roi_size,
+                landmarks_roi=roi_result.landmarks_roi,
+                handedness=roi_result.handedness,
+            )
             mapped_lines = simplify_and_map_lines(selected_lines, roi_result.roi_meta)
 
             detected_lines = sum(

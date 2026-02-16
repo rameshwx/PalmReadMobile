@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Protocol, Tuple
+from typing import Dict, List, Literal, Optional, Protocol, Tuple
 
 import numpy as np
 
@@ -12,6 +12,7 @@ class RoiResult:
     roi_meta: Dict[str, float]
     handedness: Handedness
     warnings: List[str]
+    landmarks_roi: Optional[List[Tuple[float, float]]] = None
 
 
 @dataclass
@@ -32,5 +33,11 @@ class Preprocessor(Protocol):
 
 
 class LineSelector(Protocol):
-    def select(self, candidates: List[np.ndarray], roi_size: int) -> List[LineCandidate]:
+    def select(
+        self,
+        candidates: List[np.ndarray],
+        roi_size: int,
+        landmarks_roi: Optional[List[Tuple[float, float]]] = None,
+        handedness: Handedness = "unknown",
+    ) -> List[LineCandidate]:
         ...

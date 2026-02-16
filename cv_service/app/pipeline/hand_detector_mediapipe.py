@@ -103,8 +103,9 @@ class MediaPipeHandDetector:
             warnings.append("roi_crop:palm")
             # Expanded palm crop bbox (padding relative to palm bbox size).
             pad_x = 0.26 * bbox_w_palm
-            pad_y_top = 0.34 * bbox_h_palm
-            pad_y_bottom = 0.26 * bbox_h_palm
+            # Keep extra space above MCP joints to preserve the heart line area.
+            pad_y_top = 0.52 * bbox_h_palm
+            pad_y_bottom = 0.30 * bbox_h_palm
 
             x_min = max(int(px0 - pad_x), 0)
             y_min = max(int(py0 - pad_y_top), 0)
@@ -128,6 +129,18 @@ class MediaPipeHandDetector:
         crop = image_bgr[y_min:y_max, x_min:x_max]
         roi = cv2.resize(crop, (roi_size, roi_size), interpolation=cv2.INTER_AREA)
 
+        # Preserve landmarks in ROI coordinates so the selector can use
+        # anatomy-aware priors for line assignment.
+        crop_w = float(max(1, x_max - x_min))
+        crop_h = float(max(1, y_max - y_min))
+        landmarks_roi = []
+        for (x_img, y_img) in pts.tolist():
+            x_roi = ((float(x_img) - float(x_min)) / crop_w) * float(roi_size)
+            y_roi = ((float(y_img) - float(y_min)) / crop_h) * float(roi_size)
+            x_roi = float(max(0.0, min(float(roi_size) - 1.0, x_roi)))
+            y_roi = float(max(0.0, min(float(roi_size) - 1.0, y_roi)))
+            landmarks_roi.append((x_roi, y_roi))
+
         final_handedness: Handedness = detected_handedness
         if handedness_hint in ("left", "right"):
             final_handedness = handedness_hint
@@ -144,4 +157,10 @@ class MediaPipeHandDetector:
             "hand_score": handedness_score,
         }
 
-        return RoiResult(roi=roi, roi_meta=meta, handedness=final_handedness, warnings=warnings)
+        return RoiResult(
+            roi=roi,
+            roi_meta=meta,
+            handedness=final_handedness,
+            warnings=warnings,
+            landmarks_roi=landmarks_roi,
+        )
