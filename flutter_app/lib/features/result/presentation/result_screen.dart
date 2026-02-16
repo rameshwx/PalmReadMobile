@@ -11,7 +11,6 @@ import '../../feedback/presentation/feedback_sheet.dart';
 import '../data/palm_reads_api.dart';
 import '../domain/palm_read_models.dart';
 import '../state/palm_read_providers.dart';
-import 'overlay_painter.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   const ResultScreen({super.key, required this.readId});
@@ -23,7 +22,6 @@ class ResultScreen extends ConsumerStatefulWidget {
 }
 
 class _ResultScreenState extends ConsumerState<ResultScreen> {
-  final Set<String> _visibleKeys = {'life', 'head', 'heart', 'fate', 'sun'};
   bool _sharing = false;
 
   List<Map<String, dynamic>> _lineSituations(PalmReadDetail detail) {
@@ -574,21 +572,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     );
   }
 
-  void _toggleKey(String key) {
-    setState(() {
-      if (_visibleKeys.contains(key)) {
-        _visibleKeys.remove(key);
-      } else {
-        _visibleKeys.add(key);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(palmReadDetailProvider(widget.readId));
     final imageBytesAsync = ref.watch(palmImageBytesProvider(widget.readId));
-    final overlayAsync = ref.watch(palmOverlayProvider(widget.readId));
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -628,7 +615,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             onRefresh: () async {
               ref.invalidate(palmReadDetailProvider(widget.readId));
               ref.invalidate(palmImageBytesProvider(widget.readId));
-              ref.invalidate(palmOverlayProvider(widget.readId));
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
@@ -646,63 +632,29 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                     borderRadius: BorderRadius.circular(18),
                     child: AspectRatio(
                       aspectRatio: 4 / 5,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          imageBytesAsync.when(
-                            data: (bytes) {
-                              if (bytes == null || bytes.isEmpty) {
-                                return Container(
-                                  color: Colors.black12,
-                                  alignment: Alignment.center,
-                                  child: const Text('Photo unavailable'),
-                                );
-                              }
-                              return Image.memory(bytes, fit: BoxFit.cover);
-                            },
-                            loading: () => Container(
-                              color: Colors.black12,
-                              alignment: Alignment.center,
-                              child: const CircularProgressIndicator(),
-                            ),
-                            error: (_, __) => Container(
+                      child: imageBytesAsync.when(
+                        data: (bytes) {
+                          if (bytes == null || bytes.isEmpty) {
+                            return Container(
                               color: Colors.black12,
                               alignment: Alignment.center,
                               child: const Text('Photo unavailable'),
-                            ),
-                          ),
-                          overlayAsync.when(
-                            data: (overlay) => CustomPaint(
-                              painter: OverlayPainter(
-                                overlay: overlay,
-                                visibleKeys: _visibleKeys,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            loading: () => const SizedBox.shrink(),
-                            error: (_, __) => const SizedBox.shrink(),
-                          ),
-                        ],
+                            );
+                          }
+                          return Image.memory(bytes, fit: BoxFit.cover);
+                        },
+                        loading: () => Container(
+                          color: Colors.black12,
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(),
+                        ),
+                        error: (_, __) => Container(
+                          color: Colors.black12,
+                          alignment: Alignment.center,
+                          child: const Text('Photo unavailable'),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (final meta in _LineMeta.all)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: _LineChip(
-                            label: meta.label,
-                            color: meta.color,
-                            selected: _visibleKeys.contains(meta.key),
-                            onTap: () => _toggleKey(meta.key),
-                          ),
-                        ),
-                    ],
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -712,27 +664,53 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                     final direction = _pickPrediction(situations);
                     final suggestion = _pickSuggestion(detail, situations);
 
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _SummaryCard(
-                            title: 'Likely Direction',
-                            value: direction,
-                            icon: Icons.explore,
-                            tint: PalmTokens.surface,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SummaryCard(
-                            title: 'Suggestion',
-                            value: suggestion,
-                            icon: Icons.tips_and_updates,
-                            tint: PalmTokens.primary.withValues(alpha: 0.10),
-                            border: PalmTokens.primary.withValues(alpha: 0.18),
-                          ),
-                        ),
-                      ],
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 430;
+                        if (compact) {
+                          return Column(
+                            children: [
+                              _SummaryCard(
+                                title: 'Likely Direction',
+                                value: direction,
+                                icon: Icons.explore,
+                                tint: PalmTokens.surface,
+                              ),
+                              const SizedBox(height: 12),
+                              _SummaryCard(
+                                title: 'Suggestion',
+                                value: suggestion,
+                                icon: Icons.tips_and_updates,
+                                tint: PalmTokens.primary.withValues(alpha: 0.10),
+                                border: PalmTokens.primary.withValues(alpha: 0.18),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: _SummaryCard(
+                                title: 'Likely Direction',
+                                value: direction,
+                                icon: Icons.explore,
+                                tint: PalmTokens.surface,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _SummaryCard(
+                                title: 'Suggestion',
+                                value: suggestion,
+                                icon: Icons.tips_and_updates,
+                                tint: PalmTokens.primary.withValues(alpha: 0.10),
+                                border: PalmTokens.primary.withValues(alpha: 0.18),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
                   loading: () => const SizedBox.shrink(),
@@ -856,67 +834,6 @@ class _LineMeta {
   ];
 }
 
-class _LineChip extends StatelessWidget {
-  const _LineChip({
-    required this.label,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: PalmTokens.surface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? color.withValues(alpha: 0.35) : Colors.black12,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x06000000),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: selected ? color : color.withValues(alpha: 0.35),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: text.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: PalmTokens.textSub,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.title,
@@ -936,7 +853,7 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Container(
-      height: 132,
+      constraints: const BoxConstraints(minHeight: 132),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: tint,
@@ -956,6 +873,7 @@ class _SummaryCard extends StatelessWidget {
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 title.toUpperCase(),
@@ -965,14 +883,14 @@ class _SummaryCard extends StatelessWidget {
                   color: PalmTokens.textSub.withValues(alpha: 0.75),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 8),
               Text(
                 value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                softWrap: true,
                 style: text.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.2,
+                  height: 1.25,
                 ),
               ),
               const SizedBox(height: 10),
