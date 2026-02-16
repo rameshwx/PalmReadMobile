@@ -19,6 +19,3 @@ Route::middleware(['admin.basic'])->prefix('palmread/admin')->group(function ():
     Route::get('/push', [AdminDashboardController::class, 'push'])->name('admin.push');
     Route::post('/push', [AdminDashboardController::class, 'sendPush'])->name('admin.push.send');
 });
-
-// Mirror API under /palmread/api/... for subpath deployments.
-Route::prefix('palmread/api')->middleware('api')->group(base_path('routes/api.php'));
