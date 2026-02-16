@@ -10,7 +10,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::middleware(['admin.basic'])->prefix('admin')->group(function (): void {
+Route::redirect('/admin', '/palmread/admin', 301);
+
+Route::middleware(['admin.basic'])->prefix('palmread/admin')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
     Route::get('/uploads', [AdminDashboardController::class, 'uploads'])->name('admin.uploads');
