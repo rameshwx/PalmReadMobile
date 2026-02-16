@@ -22,4 +22,6 @@ return [
     'otp_resend_after_seconds' => (int) env('PALM_OTP_RESEND_AFTER_SECONDS', 45),
     'otp_max_attempts' => (int) env('PALM_OTP_MAX_ATTEMPTS', 5),
     'otp_debug_echo' => env('PALM_OTP_DEBUG_ECHO', false),
+    'fcm_server_key' => env('PALM_FCM_SERVER_KEY', ''),
+    'fcm_endpoint' => env('PALM_FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
 ];

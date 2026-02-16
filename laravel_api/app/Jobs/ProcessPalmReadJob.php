@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\PalmRead;
 use App\Services\Cv\CvClient;
+use App\Services\Push\FcmPushService;
 use App\Services\Reading\ReadingGenerator;
 use App\Services\Signature\SignatureDeduper;
 use App\Services\Storage\PalmImageStorage;
@@ -37,7 +38,8 @@ class ProcessPalmReadJob implements ShouldQueue
         CvClient $cvClient,
         ReadingGenerator $readingGenerator,
         SignatureDeduper $deduper,
-        PalmImageStorage $storage
+        PalmImageStorage $storage,
+        FcmPushService $pushService
     ): void {
         $palmRead = PalmRead::query()->find($this->palmReadId);
         if (! $palmRead) {
@@ -114,6 +116,18 @@ class ProcessPalmReadJob implements ShouldQueue
             $palmRead->failure_reason = null;
             $palmRead->save();
 
+            $this->notifyUser(
+                $palmRead,
+                $pushService,
+                title: 'Your analysis is ready',
+                body: 'Tap to view your latest palm reading.',
+                data: [
+                    'type' => 'analysis_completed',
+                    'read_id' => $palmRead->id,
+                    'status' => 'completed',
+                ],
+            );
+
             if ((int) config('palm.image_retention_days', 30) === 0) {
                 $storage->deleteIfExists($palmRead->image_path);
                 $palmRead->image_path = null;
@@ -131,6 +145,18 @@ class ProcessPalmReadJob implements ShouldQueue
             $palmRead->status = 'failed';
             $palmRead->failure_reason = mb_substr($exception->getMessage(), 0, 250);
             $palmRead->save();
+
+            $this->notifyUser(
+                $palmRead,
+                $pushService,
+                title: 'Analysis needs a retake',
+                body: 'We could not process your last photo. Please retake and try again.',
+                data: [
+                    'type' => 'analysis_failed',
+                    'read_id' => $palmRead->id,
+                    'status' => 'failed',
+                ],
+            );
 
             Log::error('Palm read failed', [
                 'palm_read_id' => $palmRead->id,
@@ -347,5 +373,30 @@ class ProcessPalmReadJob implements ShouldQueue
         }
 
         return true;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function notifyUser(
+        PalmRead $read,
+        FcmPushService $pushService,
+        string $title,
+        string $body,
+        array $data
+    ): void {
+        try {
+            $user = $read->user()->first();
+            if (! $user) {
+                return;
+            }
+
+            $pushService->sendToUser($user, $title, $body, $data);
+        } catch (Throwable $exception) {
+            Log::warning('Failed to send push notification', [
+                'palm_read_id' => $read->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

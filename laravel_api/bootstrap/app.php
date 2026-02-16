@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'correlation.id' => \App\Http\Middleware\CorrelationIdMiddleware::class,
+            'admin.basic' => \App\Http\Middleware\AdminBasicAuthMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

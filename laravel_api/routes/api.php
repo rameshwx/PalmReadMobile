@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PalmReadController;
 use App\Http\Controllers\Api\PalmReadFeedbackController;
+use App\Http\Controllers\Api\PushTokenController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -24,6 +25,8 @@ Route::prefix('auth')->middleware(['correlation.id'])->group(function (): void {
 
 Route::middleware(['auth:sanctum', 'correlation.id'])->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::post('/push-tokens/register', [PushTokenController::class, 'register']);
+    Route::post('/push-tokens/unregister', [PushTokenController::class, 'unregister']);
     Route::get('/palm-reads', [PalmReadController::class, 'index']);
     Route::post('/palm-reads', [PalmReadController::class, 'store']);
     Route::get('/palm-reads/{palmRead}', [PalmReadController::class, 'show']);
