@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/session/session_expiry.dart';
+import '../../../core/push/push_notifications_service.dart';
 import '../../../core/storage/secure_token_store.dart';
 import '../data/auth_api.dart';
 import '../domain/auth_models.dart';
@@ -130,6 +131,7 @@ class AuthController extends AsyncNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await ref.read(pushNotificationsServiceProvider).unregisterForLogout();
     await ref.read(secureTokenStoreProvider).clearToken();
     ref.read(sessionExpiredProvider.notifier).state = false;
     state = const AsyncData(AuthState());

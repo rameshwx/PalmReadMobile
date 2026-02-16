@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/push/push_notifications_service.dart';
 import 'core/session/session_expiry.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/state/auth_controller.dart';
@@ -45,6 +46,15 @@ class _HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<_HomeShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(pushNotificationsServiceProvider).start();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
