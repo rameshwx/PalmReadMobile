@@ -4,7 +4,8 @@
     <div class="card" style="max-width: 760px;">
         <h2 style="margin: 0 0 12px; font-size: 18px;">Send Push Notification</h2>
         <p class="muted" style="margin: 0 0 14px;">
-            This sends mobile push notifications to registered devices. Configure <code>PALM_FCM_SERVER_KEY</code> on the API server first.
+            This sends mobile push notifications to registered devices (FCM HTTP v1).
+            Configure <code>PALM_FCM_PROJECT_ID</code> and either <code>PALM_FCM_SERVICE_ACCOUNT_PATH</code> or <code>PALM_FCM_SERVICE_ACCOUNT_BASE64</code> on the API server.
         </p>
 
         <form method="post" action="{{ route('admin.push.send') }}">
