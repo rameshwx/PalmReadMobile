@@ -1,0 +1,16 @@
+# Secrets
+.env
+laravel_api/.env
+laravel_api/palm-read-*-firebase-adminsdk-*.json
+laravel_api/storage/app/firebase/*.json
+
+# Laravel build/runtime output
+laravel_api/vendor/
+laravel_api/storage/
+
+# Python
+**/__pycache__/
+**/*.pyc
+
+# Node
+node_modules/
