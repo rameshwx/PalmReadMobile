@@ -22,6 +22,8 @@ return [
     'otp_resend_after_seconds' => (int) env('PALM_OTP_RESEND_AFTER_SECONDS', 45),
     'otp_max_attempts' => (int) env('PALM_OTP_MAX_ATTEMPTS', 5),
     'otp_debug_echo' => env('PALM_OTP_DEBUG_ECHO', false),
-    'fcm_server_key' => env('PALM_FCM_SERVER_KEY', ''),
-    'fcm_endpoint' => env('PALM_FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
+    // FCM HTTP v1 credentials.
+    'fcm_project_id' => env('PALM_FCM_PROJECT_ID', 'palm-read-5cfa3'),
+    'fcm_service_account_path' => env('PALM_FCM_SERVICE_ACCOUNT_PATH', ''),
+    'fcm_service_account_base64' => env('PALM_FCM_SERVICE_ACCOUNT_BASE64', ''),
 ];
