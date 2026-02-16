@@ -1,6 +1,6 @@
 # PalmReadMobile Backend Server Handover
 
-Last verified: 2026-02-11 (UTC)
+Last verified: 2026-02-16 (UTC)
 
 ## 1) Server Access
 
@@ -78,12 +78,16 @@ This server is running the project in Docker Compose mode.
 | Laravel worker | `palmread_laravel_worker` | internal |
 | CV service | `palmread_cv_service` | `0.0.0.0:8001 -> 8001` |
 | Ollama LLM | `palmread_ollama` | internal `11434` |
-| PostgreSQL | `palmread_postgres` | `0.0.0.0:5432 -> 5432` |
-| Redis | `palmread_redis` | `0.0.0.0:6379 -> 6379` |
+| PostgreSQL | `palmread_postgres` | `127.0.0.1:5432 -> 5432` |
+| Redis | `palmread_redis` | `127.0.0.1:6379 -> 6379` |
 
 Live URLs:
 
 - API base: `http://51.255.201.31:8080`
+- API base path (mobile app): `http://51.255.201.31:8080/palmread/api`
+- API health: `http://51.255.201.31:8080/palmread/api/health`
+- Admin dashboard: `http://51.255.201.31:8080/palmread/admin`
+- App health: `http://51.255.201.31:8080/up`
 - CV health: `http://51.255.201.31:8001/health`
 
 ## 5) Project File Locations
@@ -144,6 +148,11 @@ From `/home/ubuntu/PalmReadMobile/.env`:
 - `LARAVEL_PALM_LLM_MODEL=qwen2.5:1.5b`
 - `LARAVEL_PALM_LLM_TIMEOUT_SECONDS=60`
 - `LARAVEL_PALM_LLM_NUM_PREDICT=160`
+- `LARAVEL_PALM_FCM_PROJECT_ID=palm-read-5cfa3`
+- `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_PATH=/var/www/html/storage/app/firebase/service-account.json`
+- `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_BASE64=`
+- `LARAVEL_PALM_ADMIN_USERNAME=...`
+- `LARAVEL_PALM_ADMIN_PASSWORD=...`
 - `CV_MAX_IMAGE_SIDE=1600`
 - `CV_ROI_SIZE=512`
 - `CV_TIMEOUT_MS=8000`
@@ -230,11 +239,36 @@ docker compose exec -T laravel_app php artisan test
 Health checks:
 
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:8080/palmread/api/health
 curl http://localhost:8001/health
 ```
 
-## 9) Fresh Setup From Scratch (Same Docker-Based Architecture)
+## 9) Push Notifications (FCM HTTP v1)
+
+This stack uses **FCM HTTP v1** (service-account OAuth), not the legacy server-key method.
+
+### Required env (root `.env`, consumed by Docker Compose)
+
+- `LARAVEL_PALM_FCM_PROJECT_ID=palm-read-5cfa3`
+- `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_PATH=/var/www/html/storage/app/firebase/service-account.json`
+  - (Alternative) `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_BASE64=<base64(json)>`
+
+### Service account file (VPS)
+
+Place the Firebase service-account JSON at:
+
+- Host path: `/home/ubuntu/PalmReadMobile/laravel_api/storage/app/firebase/service-account.json`
+- Container path: `/var/www/html/storage/app/firebase/service-account.json`
+
+Then restart Laravel and clear caches:
+
+```bash
+cd /home/ubuntu/PalmReadMobile
+docker compose exec -T laravel_app php artisan optimize:clear
+docker compose restart laravel_app laravel_worker
+```
+
+## 10) Fresh Setup From Scratch (Same Docker-Based Architecture)
 
 ### Step 1: Provision server
 
@@ -293,7 +327,7 @@ docker compose exec -T laravel_app php artisan optimize:clear
 
 ```bash
 docker compose ps
-curl http://localhost:8080/api/health
+curl http://localhost:8080/palmread/api/health
 curl http://localhost:8001/health
 ```
 
@@ -304,10 +338,10 @@ curl http://localhost:8001/health
 3. Rotate server password and switch to SSH key auth.
 4. Enable firewall rules.
 
-## 10) Current Security and Infra Notes
+## 11) Current Security and Infra Notes
 
 - UFW status: `inactive`.
-- DB (`5432`) and Redis (`6379`) are publicly mapped in current compose; restrict these in production.
+- DB (`5432`) and Redis (`6379`) are bound to localhost (`127.0.0.1`) in current compose.
 - SSH password auth is in use.
 - Swap is `0B` (no swap configured).
 - Disk currently has ample free space (`~67G` free on `/`).
@@ -319,9 +353,9 @@ Recommended immediate actions:
 3. Remove public exposure of `5432` and `6379`.
 4. Add TLS termination and domain-based access.
 
-## 11) Deployment Update Workflow
+## 12) Deployment Update Workflow
 
-Typical backend update process:
+Typical backend update process (git-based):
 
 ```bash
 cd /home/ubuntu/PalmReadMobile
@@ -332,13 +366,22 @@ docker compose exec -T laravel_app php artisan optimize:clear
 docker compose ps
 ```
 
+Note: As of 2026-02-16, the live VPS folder `/home/ubuntu/PalmReadMobile` may not be a git checkout (no `.git/`).
+If so, update by syncing files from your local machine (e.g. `rsync`/`scp`) and then restarting containers:
+
+```bash
+cd /home/ubuntu/PalmReadMobile
+docker compose exec -T laravel_app php artisan optimize:clear
+docker compose restart laravel_app laravel_worker nginx
+```
+
 If only PHP code changed (no image rebuild needed), a restart is usually enough:
 
 ```bash
 docker compose restart laravel_app laravel_worker nginx
 ```
 
-## 12) Quick Troubleshooting
+## 13) Quick Troubleshooting
 
 401 from app:
 
