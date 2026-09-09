@@ -11,19 +11,23 @@ class AdminDashboardTest extends TestCase
 
     public function test_admin_dashboard_requires_basic_auth(): void
     {
+        $testPassword = bin2hex(random_bytes(16));
+
         config()->set('admin.username', 'admin');
-        config()->set('admin.password', 'test-only-generated-admin-password');
+        config()->set('admin.password', $testPassword);
 
         $this->get('/admin')->assertStatus(401);
     }
 
     public function test_admin_dashboard_allows_valid_basic_auth(): void
     {
+        $testPassword = bin2hex(random_bytes(16));
+
         config()->set('admin.username', 'admin');
-        config()->set('admin.password', 'test-only-generated-admin-password');
+        config()->set('admin.password', $testPassword);
 
         $headers = [
-            'Authorization' => 'Basic '.base64_encode('admin:test-only-generated-admin-password'),
+            'Authorization' => 'Basic '.base64_encode('admin:'.$testPassword),
         ];
 
         $this->withHeaders($headers)->get('/admin')->assertOk();

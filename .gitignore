@@ -3,6 +3,11 @@
 laravel_api/.env
 laravel_api/palm-read-*-firebase-adminsdk-*.json
 laravel_api/storage/app/firebase/*.json
+**/*service-account*.json
+*.pem
+*.p12
+*.pfx
+*.jks
 
 # Laravel build/runtime output
 laravel_api/vendor/

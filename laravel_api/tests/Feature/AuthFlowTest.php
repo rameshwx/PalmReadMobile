@@ -12,16 +12,18 @@ class AuthFlowTest extends TestCase
 
     public function test_registration_rejects_case_insensitive_duplicate_email(): void
     {
+        $testPassword = bin2hex(random_bytes(16));
+
         User::query()->create([
             'name' => 'Existing',
             'email' => 'existing@example.com',
-            'password' => bcrypt('test-only-generated-password'),
+            'password' => bcrypt($testPassword),
         ]);
 
         $response = $this->postJson('/api/auth/register', [
             'name' => 'Duplicate',
             'email' => 'Existing@Example.com',
-            'password' => 'test-only-generated-password',
+            'password' => $testPassword,
         ]);
 
         $response->assertStatus(422)

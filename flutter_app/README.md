@@ -14,7 +14,7 @@ Mobile client for PalmRead v1.
 ## Run
 ```bash
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://<vps-host>:8080
+flutter run --dart-define=API_BASE_URL=https://api.example.invalid
 ```
 
 ## Dart Defines
@@ -22,13 +22,13 @@ flutter run --dart-define=API_BASE_URL=http://<vps-host>:8080
 - `POLL_INTERVAL_SECONDS`
 - `UPLOAD_TIMEOUT_SECONDS`
 
-Current deployed API endpoint:
-- `http://<vps-host>:8080`
+The API endpoint must be supplied at build or run time. The `.invalid` URL above is
+deliberately non-routable and is only a safe placeholder.
 
 Example with explicit polling and timeout:
 ```bash
 flutter run \
-  --dart-define=API_BASE_URL=http://<vps-host>:8080 \
+  --dart-define=API_BASE_URL=https://api.example.invalid \
   --dart-define=POLL_INTERVAL_SECONDS=2 \
   --dart-define=UPLOAD_TIMEOUT_SECONDS=30
 ```

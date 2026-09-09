@@ -20,26 +20,28 @@ This stack serves the mobile + admin experience under the `/palmread` path:
    ```bash
    cp .env.example .env
    ```
-2. Build and start services:
+2. Edit `.env` and set a local `LARAVEL_DB_PASSWORD` before starting Compose.
+   Keep the real value outside Git.
+3. Build and start services:
    ```bash
    docker compose up --build -d
    ```
-3. Initialize Laravel app (inside container):
+4. Initialize Laravel app (inside container):
    ```bash
    docker compose exec laravel_app composer install
    docker compose exec laravel_app cp .env.example .env
    docker compose exec laravel_app php artisan key:generate
    docker compose exec laravel_app php artisan migrate
    ```
-4. CV service health:
+5. CV service health:
    ```bash
    curl http://localhost:8001/health
    ```
-5. API health:
+6. API health:
    ```bash
    curl http://localhost:8080/palmread/api/health
    ```
-6. (Optional) Enable local LLM reading generation:
+7. (Optional) Enable local LLM reading generation:
    ```bash
    # In .env set:
    # LARAVEL_PALM_LLM_ENABLED=true

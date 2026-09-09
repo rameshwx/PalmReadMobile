@@ -1,7 +1,7 @@
 class AppConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://<vps-host>:8080',
+    defaultValue: 'https://api.example.invalid',
   );
 
   // API path prefix for deployments behind a subpath.

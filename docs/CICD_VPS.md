@@ -1,48 +1,49 @@
 # CI/CD: Deploy Backend To VPS
 
-This repo includes a GitHub Actions workflow that deploys backend changes to the VPS by `rsync` + a remote deploy script.
+This repository includes a GitHub Actions workflow that deploys backend changes
+using `rsync` and the remote deployment script. No host address, username, path,
+password, or private key is stored in this repository.
 
-## What It Does
+## Required GitHub Actions secrets
 
-On push to `main` (backend paths only), the workflow:
+Configure these in the repository or environment secret store:
 
-1. Syncs repo files to the VPS directory via `rsync` (excluding `.env` and runtime directories).
-2. Runs `scripts/deploy/deploy_remote.sh` on the VPS to:
-   - `docker compose up -d --build` (Laravel app/worker, CV service, nginx)
-   - `composer install`
-   - `php artisan migrate --force`
-   - `php artisan optimize:clear`
-   - health checks
+- `VPS_HOST`: deployment host or DNS name
+- `VPS_USER`: SSH user
+- `VPS_PATH`: deployment directory
+- `VPS_SSH_PRIVATE_KEY`: private key that can log in as `VPS_USER`
 
-## Required GitHub Secrets
+The workflow passes these values to commands at runtime. Do not replace the
+secret references in `.github/workflows/deploy_vps.yml` with literals.
 
-Add these in GitHub: `Settings -> Secrets and variables -> Actions`.
+## SSH key setup
 
-- `VPS_HOST`: `<vps-host>`
-- `VPS_USER`: `ubuntu`
-- `VPS_PATH`: `<deploy-path>`
-- `VPS_SSH_PRIVATE_KEY`: an SSH private key that can log in as `ubuntu`
-
-## SSH Key Setup (Recommended)
-
-1. Generate a key on your local machine:
+Generate a dedicated CI key outside the repository:
 
 ```bash
 ssh-keygen -t ed25519 -C "palmreadmobile-ci" -f ~/.ssh/palmreadmobile_ci
 ```
 
-2. Add the public key to the VPS:
+Install the public key on the deployment host through an approved secure access
+procedure. Store only the private key contents in `VPS_SSH_PRIVATE_KEY` and keep
+the local key files out of Git.
 
-```bash
-ssh ubuntu@<vps-host> "mkdir -p ~/.ssh && chmod 700 ~/.ssh"
-cat ~/.ssh/palmreadmobile_ci.pub | ssh ubuntu@<vps-host> "cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
-```
+## Deployment flow
 
-3. In GitHub Secrets, set `VPS_SSH_PRIVATE_KEY` to the contents of `~/.ssh/palmreadmobile_ci`.
+On a qualifying push to `main`, the workflow:
 
-## Notes
+1. Checks out the repository.
+2. Loads the SSH private key from GitHub Actions secrets.
+3. Adds the secret host to the runner's temporary `known_hosts` file.
+4. Synchronizes source while excluding `.env` and runtime directories.
+5. Runs `scripts/deploy/deploy_remote.sh` on the deployment host.
 
-- The deploy workflow intentionally does not sync `.env` files.
-- If you change Dockerfiles or Python deps, the deploy script rebuilds images via `--build`.
-- If you want to deploy only certain services, edit `scripts/deploy/deploy_remote.sh`.
+The remote script rebuilds the Laravel, worker, CV, and Nginx services, runs
+migrations and cache clearing, and performs health checks.
 
+## Secret handling
+
+- Keep root and Laravel `.env` files on the deployment host only.
+- Keep Firebase service-account JSON on the deployment host only.
+- Do not pass passwords on command lines or commit them to documentation.
+- Rotate credentials if they have appeared in repository history.
