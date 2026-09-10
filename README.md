@@ -12,8 +12,8 @@ This stack serves the mobile + admin experience under the `/palmread` path:
 
 - API base: `http://<host>:8080/palmread/api`
 - Admin dashboard: `http://<host>:8080/palmread/admin`
-- Health: `http://<host>:8080/up`
-- CV health: `http://<host>:8001/health`
+- Health: `http://<host>:8080/palmread/api/health`
+- CV health: `http://<host>:8001/health` (local development only)
 
 ## Quick Start (Docker Compose)
 1. Copy env template:
@@ -24,14 +24,14 @@ This stack serves the mobile + admin experience under the `/palmread` path:
    Keep the real value outside Git.
 3. Build and start services:
    ```bash
-   docker compose up --build -d
+   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
    ```
 4. Initialize Laravel app (inside container):
    ```bash
-   docker compose exec laravel_app composer install
-   docker compose exec laravel_app cp .env.example .env
-   docker compose exec laravel_app php artisan key:generate
-   docker compose exec laravel_app php artisan migrate
+   docker compose -f docker-compose.yml -f docker-compose.local.yml exec laravel_app composer install
+   docker compose -f docker-compose.yml -f docker-compose.local.yml exec laravel_app cp .env.example .env
+   docker compose -f docker-compose.yml -f docker-compose.local.yml exec laravel_app php artisan key:generate
+   docker compose -f docker-compose.yml -f docker-compose.local.yml exec laravel_app php artisan migrate
    ```
 5. CV service health:
    ```bash
@@ -41,17 +41,17 @@ This stack serves the mobile + admin experience under the `/palmread` path:
    ```bash
    curl http://localhost:8080/palmread/api/health
    ```
-7. (Optional) Enable local LLM reading generation:
+7. (Optional) Enable OpenRouter humanized reading generation:
    ```bash
    # In .env set:
    # LARAVEL_PALM_LLM_ENABLED=true
-   # LARAVEL_PALM_LLM_MODEL=llama3.2:1b
+   # LARAVEL_PALM_OPENROUTER_API_KEY=<server-side-secret>
+   # LARAVEL_PALM_OPENROUTER_MODEL=openai/gpt-4o
    # LARAVEL_PALM_LLM_FORCE_ENGLISH=true
-   # LARAVEL_PALM_LLM_ENGLISH_MODEL=llama3.2:1b
-   docker compose up -d ollama
-   docker compose exec -T ollama ollama pull llama3.2:1b
-   docker compose up -d --force-recreate laravel_app laravel_worker
+   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --force-recreate laravel_app laravel_worker
    ```
+
+   OpenRouter is used only after palm analysis to humanize structured findings, using one combined request per palm read. If it is disabled, unavailable, or returns invalid output, the API uses its deterministic reading templates.
 
 ## Non-Docker VM Deploy
 See:
@@ -59,8 +59,10 @@ See:
 - `cv_service/README.md`
 - `flutter_app/README.md`
 
-## CI/CD (Backend -> VPS)
-GitHub Actions workflow is included for deploying backend changes to your VPS:
+## Deployment
+Coolify is the automatic production deployment path for `main`. The legacy SSH
+workflow is manual-only and retained as a fallback:
+- `docs/COOLIFY.md`
 - `docs/CICD_VPS.md`
 
 ## Auth (OTP)
@@ -83,8 +85,8 @@ Backend uses **FCM HTTP v1** (service account), not the legacy server-key method
    - `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_PATH=/var/www/html/storage/app/firebase/service-account.json`
 4. Restart Laravel containers and clear caches:
    ```bash
-   docker compose exec -T laravel_app php artisan optimize:clear
-   docker compose restart laravel_app laravel_worker
+   docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T laravel_app php artisan optimize:clear
+   docker compose -f docker-compose.yml -f docker-compose.local.yml restart laravel_app laravel_worker
    ```
 
 For Flutter, after changing Android package to `com.rameshwx.palm_read_mobile`, prefer generating correct Firebase config via:

@@ -7,9 +7,6 @@ services:
       POSTGRES_DB: ${LARAVEL_DB_DATABASE:-palmread}
       POSTGRES_USER: ${LARAVEL_DB_USERNAME:-palmread}
       POSTGRES_PASSWORD: ${LARAVEL_DB_PASSWORD:?LARAVEL_DB_PASSWORD must be set}
-    ports:
-      # Bind to localhost to avoid exposing DB publicly.
-      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,10 +14,6 @@ services:
     image: redis:7-alpine
     container_name: palmread_redis
     restart: unless-stopped
-    ports:
-      # Bind to localhost to avoid exposing Redis publicly.
-      - "127.0.0.1:6379:6379"
-
   laravel_app:
     build:
       context: ./laravel_api
@@ -28,6 +21,7 @@ services:
     container_name: palmread_laravel_app
     restart: unless-stopped
     environment:
+      APP_KEY: ${LARAVEL_APP_KEY:-}
       APP_ENV: ${LARAVEL_APP_ENV:-local}
       APP_DEBUG: ${LARAVEL_APP_DEBUG:-true}
       APP_URL: ${LARAVEL_APP_URL:-http://localhost:8080}
@@ -57,14 +51,14 @@ services:
       PALM_UPLOAD_MAX_MB: ${LARAVEL_PALM_UPLOAD_MAX_MB:-8}
       PALM_HISTORY_LIMIT: ${LARAVEL_PALM_HISTORY_LIMIT:-10}
       PALM_LLM_ENABLED: ${LARAVEL_PALM_LLM_ENABLED:-false}
-      PALM_LLM_BASE_URL: ${LARAVEL_PALM_LLM_BASE_URL:-http://ollama:11434}
-      PALM_LLM_MODEL: ${LARAVEL_PALM_LLM_MODEL:-llama3.2:1b}
+      PALM_OPENROUTER_API_KEY: ${LARAVEL_PALM_OPENROUTER_API_KEY:-}
+      PALM_OPENROUTER_BASE_URL: ${LARAVEL_PALM_OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      PALM_OPENROUTER_MODEL: ${LARAVEL_PALM_OPENROUTER_MODEL:-openai/gpt-4o}
       PALM_LLM_TIMEOUT_SECONDS: ${LARAVEL_PALM_LLM_TIMEOUT_SECONDS:-60}
       PALM_LLM_TEMPERATURE: ${LARAVEL_PALM_LLM_TEMPERATURE:-0}
-      PALM_LLM_NUM_PREDICT: ${LARAVEL_PALM_LLM_NUM_PREDICT:-420}
+      PALM_LLM_NUM_PREDICT: ${LARAVEL_PALM_LLM_NUM_PREDICT:-900}
       PALM_LLM_SEED: ${LARAVEL_PALM_LLM_SEED:-42}
       PALM_LLM_FORCE_ENGLISH: ${LARAVEL_PALM_LLM_FORCE_ENGLISH:-true}
-      PALM_LLM_ENGLISH_MODEL: ${LARAVEL_PALM_LLM_ENGLISH_MODEL:-llama3.2:1b}
       PALM_LLM_REQUIRE_SUCCESS: ${LARAVEL_PALM_LLM_REQUIRE_SUCCESS:-false}
       PALM_OTP_TTL_SECONDS: ${LARAVEL_PALM_OTP_TTL_SECONDS:-600}
       PALM_OTP_RESEND_AFTER_SECONDS: ${LARAVEL_PALM_OTP_RESEND_AFTER_SECONDS:-45}
@@ -81,7 +75,6 @@ services:
       - postgres
       - redis
       - cv_service
-      - ollama
     volumes:
       - ./laravel_api:/var/www/html
       - palm_images:/var/www/html/storage/app/palms
@@ -92,8 +85,9 @@ services:
       dockerfile: docker/php/Dockerfile
     container_name: palmread_laravel_worker
     restart: unless-stopped
-    command: php artisan queue:work redis --queue=palm_reads --tries=3 --sleep=1 --timeout=30
+    command: php artisan queue:work redis --queue=palm_reads --tries=3 --sleep=1 --timeout=75
     environment:
+      APP_KEY: ${LARAVEL_APP_KEY:-}
       APP_ENV: ${LARAVEL_APP_ENV:-local}
       APP_DEBUG: ${LARAVEL_APP_DEBUG:-true}
       APP_URL: ${LARAVEL_APP_URL:-http://localhost:8080}
@@ -123,14 +117,14 @@ services:
       PALM_UPLOAD_MAX_MB: ${LARAVEL_PALM_UPLOAD_MAX_MB:-8}
       PALM_HISTORY_LIMIT: ${LARAVEL_PALM_HISTORY_LIMIT:-10}
       PALM_LLM_ENABLED: ${LARAVEL_PALM_LLM_ENABLED:-false}
-      PALM_LLM_BASE_URL: ${LARAVEL_PALM_LLM_BASE_URL:-http://ollama:11434}
-      PALM_LLM_MODEL: ${LARAVEL_PALM_LLM_MODEL:-llama3.2:1b}
+      PALM_OPENROUTER_API_KEY: ${LARAVEL_PALM_OPENROUTER_API_KEY:-}
+      PALM_OPENROUTER_BASE_URL: ${LARAVEL_PALM_OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      PALM_OPENROUTER_MODEL: ${LARAVEL_PALM_OPENROUTER_MODEL:-openai/gpt-4o}
       PALM_LLM_TIMEOUT_SECONDS: ${LARAVEL_PALM_LLM_TIMEOUT_SECONDS:-60}
       PALM_LLM_TEMPERATURE: ${LARAVEL_PALM_LLM_TEMPERATURE:-0}
-      PALM_LLM_NUM_PREDICT: ${LARAVEL_PALM_LLM_NUM_PREDICT:-420}
+      PALM_LLM_NUM_PREDICT: ${LARAVEL_PALM_LLM_NUM_PREDICT:-900}
       PALM_LLM_SEED: ${LARAVEL_PALM_LLM_SEED:-42}
       PALM_LLM_FORCE_ENGLISH: ${LARAVEL_PALM_LLM_FORCE_ENGLISH:-true}
-      PALM_LLM_ENGLISH_MODEL: ${LARAVEL_PALM_LLM_ENGLISH_MODEL:-llama3.2:1b}
       PALM_LLM_REQUIRE_SUCCESS: ${LARAVEL_PALM_LLM_REQUIRE_SUCCESS:-false}
       PALM_OTP_TTL_SECONDS: ${LARAVEL_PALM_OTP_TTL_SECONDS:-600}
       PALM_OTP_RESEND_AFTER_SECONDS: ${LARAVEL_PALM_OTP_RESEND_AFTER_SECONDS:-45}
@@ -147,7 +141,6 @@ services:
       - laravel_app
       - redis
       - cv_service
-      - ollama
     volumes:
       - ./laravel_api:/var/www/html
       - palm_images:/var/www/html/storage/app/palms
@@ -158,8 +151,8 @@ services:
     restart: unless-stopped
     depends_on:
       - laravel_app
-    ports:
-      - "8080:80"
+    expose:
+      - "80"
     volumes:
       - ./laravel_api:/var/www/html
       - ./laravel_api/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -179,28 +172,13 @@ services:
       CV_NUM_THREADS: ${CV_NUM_THREADS:-1}
       PYTHONHASHSEED: 0
       LOG_LEVEL: ${CV_LOG_LEVEL:-INFO}
-    ports:
-      - "8001:8001"
+    expose:
+      - "8001"
     volumes:
       # Keep the palm image mount path aligned with Laravel local_path payloads.
       - palm_images:/var/www/html/storage/app/palms
       - palm_images:/data/palms
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: palmread_ollama
-    restart: unless-stopped
-    expose:
-      - "11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-
 volumes:
   postgres_data:
   palm_images:
-  ollama_data:

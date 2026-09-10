@@ -1,14 +1,6 @@
-name: Deploy VPS (Backend)
+name: Manual VPS Fallback (Backend)
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "laravel_api/**"
-      - "cv_service/**"
-      - "docker-compose.yml"
-      - "scripts/deploy/**"
-      - ".env.example"
   workflow_dispatch: {}
 
 concurrency:
@@ -52,4 +44,3 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" \
             "cd ${VPS_PATH} && bash scripts/deploy/deploy_remote.sh"
-

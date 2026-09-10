@@ -23,7 +23,7 @@ class LlmReadingGenerator
         'sun' => 'Sun (Apollo) line',
     ];
 
-    public function __construct(private readonly OllamaClient $ollamaClient)
+    public function __construct(private readonly OpenRouterClient $openRouterClient)
     {
     }
 
@@ -53,8 +53,7 @@ class LlmReadingGenerator
         ];
 
         try {
-            $narrativePayload = $this->ollamaClient->generateNarrativeAndDisclaimer($input, $correlationId);
-            $linePayload = $this->ollamaClient->generateLineSituations($input, $correlationId);
+            $llmPayload = $this->openRouterClient->generateReading($input, $correlationId);
         } catch (Throwable $exception) {
             Log::warning('LLM reading generation failed, fallback to templates.', [
                 'correlation_id' => $correlationId,
@@ -64,7 +63,7 @@ class LlmReadingGenerator
             return null;
         }
 
-        $narrative = trim((string) ($narrativePayload['narrative'] ?? ''));
+        $narrative = trim((string) ($llmPayload['narrative'] ?? ''));
         if ($narrative === '') {
             Log::warning('LLM payload missing narrative.', [
                 'correlation_id' => $correlationId,
@@ -72,7 +71,7 @@ class LlmReadingGenerator
             return null;
         }
 
-        $disclaimer = trim((string) ($narrativePayload['disclaimer'] ?? ''));
+        $disclaimer = trim((string) ($llmPayload['disclaimer'] ?? ''));
         if ($disclaimer === '') {
             Log::warning('LLM payload missing disclaimer.', [
                 'correlation_id' => $correlationId,
@@ -81,7 +80,7 @@ class LlmReadingGenerator
         }
 
         $lineSituations = $this->normalizeLineSituations(
-            is_array($linePayload['line_situations'] ?? null) ? $linePayload['line_situations'] : []
+            is_array($llmPayload['line_situations'] ?? null) ? $llmPayload['line_situations'] : []
         );
         if ($lineSituations === null) {
             Log::warning('LLM payload missing required line_situations fields.', [
@@ -90,28 +89,25 @@ class LlmReadingGenerator
             return null;
         }
 
-        $englishPayload = $this->enforceEnglishPayload(
-            payload: [
-                'narrative' => $narrative,
-                'disclaimer' => $disclaimer,
-                'line_situations' => $lineSituations,
-            ],
-            correlationId: $correlationId,
-            signatureHash: $signatureHash
-        );
+        $payload = [
+            'narrative' => $narrative,
+            'disclaimer' => $disclaimer,
+            'line_situations' => $lineSituations,
+        ];
 
-        if ($englishPayload === null) {
+        $forceEnglish = filter_var(config('palm.llm_force_english', true), FILTER_VALIDATE_BOOL);
+        if ($forceEnglish && ! EnglishOnlyGuard::payloadIsEnglish($payload)) {
+            Log::warning('OpenRouter output was non-English. Falling back to templates.', [
+                'correlation_id' => $correlationId,
+            ]);
+
             return null;
         }
 
-        $narrative = $englishPayload['narrative'];
-        $disclaimer = $englishPayload['disclaimer'];
-        $lineSituations = $englishPayload['line_situations'];
-
         $resultJson = $baseResultJson;
         $resultJson['reading_style_version'] = 6;
-        $resultJson['generator'] = 'ollama';
-        $resultJson['llm_model'] = (string) config('palm.llm_model', 'llama3.2:1b');
+        $resultJson['generator'] = 'openrouter';
+        $resultJson['llm_model'] = (string) config('palm.openrouter_model', 'openai/gpt-4o');
         $resultJson['tone'] = 'friendly-professional-llm';
         $resultJson['narrative'] = $narrative;
         $resultJson['disclaimer'] = $disclaimer;
@@ -170,69 +166,5 @@ class LlmReadingGenerator
         }
 
         return $ordered;
-    }
-
-    /**
-     * @param array{narrative:string,disclaimer:string,line_situations:array<int,array<string,mixed>>} $payload
-     * @return array{narrative:string,disclaimer:string,line_situations:array<int,array<string,mixed>>}|null
-     */
-    private function enforceEnglishPayload(array $payload, string $correlationId, string $signatureHash): ?array
-    {
-        $forceEnglish = filter_var(config('palm.llm_force_english', true), FILTER_VALIDATE_BOOL);
-        if (! $forceEnglish || EnglishOnlyGuard::payloadIsEnglish($payload)) {
-            return $payload;
-        }
-
-        Log::info('LLM output was non-English. Rewriting to English.', [
-            'correlation_id' => $correlationId,
-        ]);
-
-        try {
-            $rewritten = $this->ollamaClient->rewriteReadingInEnglish($payload, $correlationId, $signatureHash);
-        } catch (Throwable $exception) {
-            Log::warning('English rewrite failed for LLM payload.', [
-                'correlation_id' => $correlationId,
-                'error' => $exception->getMessage(),
-            ]);
-
-            return null;
-        }
-
-        $narrative = trim((string) ($rewritten['narrative'] ?? ''));
-        $disclaimer = trim((string) ($rewritten['disclaimer'] ?? ''));
-        if ($narrative === '' || $disclaimer === '') {
-            Log::warning('English rewrite returned empty narrative/disclaimer.', [
-                'correlation_id' => $correlationId,
-            ]);
-
-            return null;
-        }
-
-        $lineSituations = $this->normalizeLineSituations(
-            is_array($rewritten['line_situations'] ?? null) ? $rewritten['line_situations'] : []
-        );
-        if ($lineSituations === null) {
-            Log::warning('English rewrite returned invalid line_situations.', [
-                'correlation_id' => $correlationId,
-            ]);
-
-            return null;
-        }
-
-        $normalizedPayload = [
-            'narrative' => $narrative,
-            'disclaimer' => $disclaimer,
-            'line_situations' => $lineSituations,
-        ];
-
-        if (! EnglishOnlyGuard::payloadIsEnglish($normalizedPayload)) {
-            Log::warning('English rewrite still produced non-English text.', [
-                'correlation_id' => $correlationId,
-            ]);
-
-            return null;
-        }
-
-        return $normalizedPayload;
     }
 }

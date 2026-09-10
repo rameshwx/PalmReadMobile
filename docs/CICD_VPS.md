@@ -1,8 +1,9 @@
 # CI/CD: Deploy Backend To VPS
 
-This repository includes a GitHub Actions workflow that deploys backend changes
-using `rsync` and the remote deployment script. No host address, username, path,
-password, or private key is stored in this repository.
+Production deployments are handled by Coolify through the connected GitHub App.
+This repository retains a manual-only GitHub Actions workflow as an SSH fallback.
+No host address, username, path, password, or private key is stored in this
+repository.
 
 ## Required GitHub Actions secrets
 
@@ -30,7 +31,7 @@ the local key files out of Git.
 
 ## Deployment flow
 
-On a qualifying push to `main`, the workflow:
+When manually dispatched, the fallback workflow:
 
 1. Checks out the repository.
 2. Loads the SSH private key from GitHub Actions secrets.

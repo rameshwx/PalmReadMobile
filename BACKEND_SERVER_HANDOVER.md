@@ -25,7 +25,7 @@ The backend runs as a Docker Compose stack containing:
 - Redis queue/cache
 - PostgreSQL database
 - CPU-only CV service
-- Optional Ollama LLM service
+- Optional OpenRouter humanization through the Laravel app and worker
 
 The deployment path is supplied through the private `VPS_PATH` secret. It must not
 be committed to this repository.
@@ -34,13 +34,13 @@ be committed to this repository.
 
 | Service | Exposure |
 |---|---|
-| Nginx API web server | configured application HTTP port |
+| Nginx API web server | internal port 80; published only by the local override |
 | Laravel app | internal PHP-FPM port |
 | Laravel worker | internal |
-| CV service | configured health/API port |
-| Ollama | internal only |
-| PostgreSQL | loopback-only management binding |
-| Redis | loopback-only management binding |
+| CV service | internal port 8001; published only by the local override |
+| OpenRouter | outbound HTTPS from Laravel app/worker |
+| PostgreSQL | private Compose service; loopback-only in local development |
+| Redis | private Compose service; loopback-only in local development |
 
 Use the deployment host and application scheme supplied by the environment when
 constructing API, admin, and health URLs. Do not add those values to Git.
@@ -55,6 +55,7 @@ outside Git and set the real values there, including:
 - `LARAVEL_PALM_ADMIN_PASSWORD`, when the admin dashboard is enabled
 - `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_PATH` or
   `LARAVEL_PALM_FCM_SERVICE_ACCOUNT_BASE64`
+- `LARAVEL_PALM_OPENROUTER_API_KEY`, when OpenRouter humanization is enabled
 - `LARAVEL_APP_URL`, `LARAVEL_CV_SERVICE_BASE_URL`, and any deployment API URL
 
 The Firebase service-account JSON must remain on the deployment host only. It is
@@ -65,12 +66,12 @@ ignored by Git and must never be pasted into documentation, issues, or logs.
 Run these commands from the private deployment path represented by `$VPS_PATH`:
 
 ```bash
-docker compose up --build -d
-docker compose exec -T laravel_app composer install
-docker compose exec -T laravel_app php artisan key:generate
-docker compose exec -T laravel_app php artisan migrate --force
-docker compose exec -T laravel_app php artisan optimize:clear
-docker compose ps
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T laravel_app composer install
+docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T laravel_app php artisan key:generate
+docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T laravel_app php artisan migrate --force
+docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T laravel_app php artisan optimize:clear
+docker compose -f docker-compose.yml -f docker-compose.local.yml ps
 ```
 
 Health checks should use the configured application host and the local container

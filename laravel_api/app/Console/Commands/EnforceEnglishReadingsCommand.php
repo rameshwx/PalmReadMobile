@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\PalmRead;
 use App\Services\Reading\EnglishOnlyGuard;
-use App\Services\Reading\OllamaClient;
+use App\Services\Reading\OpenRouterClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -32,7 +32,7 @@ class EnforceEnglishReadingsCommand extends Command
         'sun' => 'Sun (Apollo) line',
     ];
 
-    public function handle(OllamaClient $ollamaClient): int
+    public function handle(OpenRouterClient $openRouterClient): int
     {
         $limit = max(0, (int) $this->option('limit'));
         $dryRun = (bool) $this->option('dry-run');
@@ -40,7 +40,7 @@ class EnforceEnglishReadingsCommand extends Command
         $query = PalmRead::query()
             ->where('status', 'completed')
             ->whereNotNull('result_json')
-            ->where('result_json->generator', 'ollama')
+            ->whereIn('result_json->generator', ['ollama', 'openrouter'])
             ->orderByDesc('created_at');
 
         if ($limit > 0) {
@@ -83,13 +83,12 @@ class EnforceEnglishReadingsCommand extends Command
                 }
 
                 $input = $this->buildInputFromRead($read);
-                $narrativePayload = $ollamaClient->generateNarrativeAndDisclaimer($input, $correlationId);
-                $linePayload = $ollamaClient->generateLineSituations($input, $correlationId);
+                $llmPayload = $openRouterClient->generateReading($input, $correlationId);
 
-                $narrative = trim((string) ($narrativePayload['narrative'] ?? ''));
-                $disclaimer = trim((string) ($narrativePayload['disclaimer'] ?? ''));
+                $narrative = trim((string) ($llmPayload['narrative'] ?? ''));
+                $disclaimer = trim((string) ($llmPayload['disclaimer'] ?? ''));
                 $normalizedLineSituations = $this->normalizeLineSituations(
-                    is_array($linePayload['line_situations'] ?? null) ? $linePayload['line_situations'] : []
+                    is_array($llmPayload['line_situations'] ?? null) ? $llmPayload['line_situations'] : []
                 );
 
                 if ($narrative === '' || $disclaimer === '' || $normalizedLineSituations === null) {
@@ -107,9 +106,9 @@ class EnforceEnglishReadingsCommand extends Command
                 $resultJson['narrative'] = $narrative;
                 $resultJson['disclaimer'] = $disclaimer;
                 $resultJson['line_situations'] = $normalizedLineSituations;
-                $resultJson['generator'] = 'ollama';
+                $resultJson['generator'] = 'openrouter';
                 $resultJson['reading_style_version'] = max((int) ($resultJson['reading_style_version'] ?? 5), 5);
-                $resultJson['llm_model'] = (string) config('palm.llm_model', 'llama3.2:1b');
+                $resultJson['llm_model'] = (string) config('palm.openrouter_model', 'openai/gpt-4o');
                 $resultJson['tone'] = $resultJson['tone'] ?? 'friendly-professional-llm';
 
                 $read->result_json = $resultJson;

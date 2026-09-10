@@ -33,13 +33,15 @@ REST API for palm reads with Sanctum auth, queue processing, CV integration, det
 - `PALM_POLLING_RECOMMENDED_SECONDS=2`
 - `PALM_HISTORY_LIMIT=10`
 - `PALM_LLM_ENABLED=false`
-- `PALM_LLM_BASE_URL=http://ollama:11434`
-- `PALM_LLM_MODEL=llama3.2:1b`
+- `PALM_OPENROUTER_API_KEY=` (keep this outside Git)
+- `PALM_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`
+- `PALM_OPENROUTER_MODEL=openai/gpt-4o`
 - `PALM_LLM_TIMEOUT_SECONDS=60`
 - `PALM_LLM_TEMPERATURE=0`
-- `PALM_LLM_NUM_PREDICT=420`
+- `PALM_LLM_NUM_PREDICT=900` (the single combined reading response needs room for all fields)
+- `PALM_LLM_SEED=42`
 - `PALM_LLM_FORCE_ENGLISH=true`
-- `PALM_LLM_ENGLISH_MODEL=llama3.2:1b`
+- `PALM_LLM_REQUIRE_SUCCESS=false`
 
 ## Local Dev (without Docker)
 1. Install PHP 8.3+, Composer 2, Redis, SQLite or PostgreSQL.
@@ -71,20 +73,13 @@ REST API for palm reads with Sanctum auth, queue processing, CV integration, det
 ## Horizon (optional)
 Enable by installing `laravel/horizon` and running `php artisan horizon` instead of `queue:work`.
 
-## Optional Local LLM (Ollama)
-1. Start Ollama service:
-   ```bash
-   docker compose up -d ollama
-   ```
-2. Pull the model:
-   ```bash
-   docker compose exec -T ollama ollama pull llama3.2:1b
-   ```
-3. Enable LLM env values and recreate Laravel app/worker.
-4. Reading generation will fallback to deterministic templates if Ollama is unavailable or returns invalid output.
+## Optional OpenRouter Humanization
+1. Set `PALM_OPENROUTER_API_KEY` in the Laravel server environment. Do not commit it or place it in the Flutter app.
+2. Set `PALM_LLM_ENABLED=true` and recreate the Laravel app/worker.
+3. Each palm read makes one combined OpenRouter request for the narrative, disclaimer, and five line insights. Reading generation will fallback to deterministic templates if OpenRouter is unavailable or returns invalid output.
 
 ## English-Only Enforcement
-When `PALM_LLM_FORCE_ENGLISH=true`, the API will automatically rewrite any non-English LLM output into English using `PALM_LLM_ENGLISH_MODEL`.
+When `PALM_LLM_FORCE_ENGLISH=true`, a non-English OpenRouter response is rejected and the API falls back to deterministic templates. This avoids a second provider request.
 
 If you already have stored results that contain non-English text (for example, older `qwen2.5:1.5b` outputs), run:
 ```bash

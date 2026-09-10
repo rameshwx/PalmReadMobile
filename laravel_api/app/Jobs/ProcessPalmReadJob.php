@@ -309,7 +309,7 @@ class ProcessPalmReadJob implements ShouldQueue
         $hasLineSituations = $this->hasAllLineSituations($resultJson['line_situations'] ?? null);
 
         $isModern = (
-            $generator === 'ollama' &&
+            in_array($generator, ['ollama', 'openrouter'], true) &&
             $version >= 6 &&
             $hasReadingText &&
             $hasNarrative &&
