@@ -16,7 +16,7 @@ class OtpAuthTest extends TestCase
         Mail::fake();
         config()->set('palm.otp_debug_echo', true);
 
-        $response = $this->postJson('/api/auth/otp/request', [
+        $response = $this->postJson('/palmread/api/auth/otp/request', [
             'email' => 'user@example.com',
         ]);
 
@@ -41,11 +41,11 @@ class OtpAuthTest extends TestCase
         Mail::fake();
         config()->set('palm.otp_debug_echo', true);
 
-        $request = $this->postJson('/api/auth/otp/request', [
+        $request = $this->postJson('/palmread/api/auth/otp/request', [
             'email' => 'new.user@example.com',
         ])->assertOk();
 
-        $verify = $this->postJson('/api/auth/otp/verify', [
+        $verify = $this->postJson('/palmread/api/auth/otp/verify', [
             'email' => 'new.user@example.com',
             'challenge_id' => $request->json('challenge_id'),
             'code' => $request->json('debug_code'),
@@ -68,7 +68,7 @@ class OtpAuthTest extends TestCase
         config()->set('palm.otp_debug_echo', true);
         config()->set('palm.otp_max_attempts', 2);
 
-        $request = $this->postJson('/api/auth/otp/request', [
+        $request = $this->postJson('/palmread/api/auth/otp/request', [
             'email' => 'blocked@example.com',
         ])->assertOk();
 
@@ -78,9 +78,9 @@ class OtpAuthTest extends TestCase
             'code' => '00000',
         ];
 
-        $this->postJson('/api/auth/otp/verify', $payload)->assertStatus(422);
-        $this->postJson('/api/auth/otp/verify', $payload)->assertStatus(422);
-        $this->postJson('/api/auth/otp/verify', $payload)
+        $this->postJson('/palmread/api/auth/otp/verify', $payload)->assertStatus(422);
+        $this->postJson('/palmread/api/auth/otp/verify', $payload)->assertStatus(422);
+        $this->postJson('/palmread/api/auth/otp/verify', $payload)
             ->assertStatus(422)
             ->assertJsonStructure(['message']);
     }
@@ -91,11 +91,11 @@ class OtpAuthTest extends TestCase
         config()->set('palm.otp_debug_echo', true);
         config()->set('palm.otp_resend_after_seconds', 45);
 
-        $this->postJson('/api/auth/otp/request', [
+        $this->postJson('/palmread/api/auth/otp/request', [
             'email' => 'cooldown@example.com',
         ])->assertOk();
 
-        $second = $this->postJson('/api/auth/otp/request', [
+        $second = $this->postJson('/palmread/api/auth/otp/request', [
             'email' => 'cooldown@example.com',
         ]);
 
@@ -107,4 +107,3 @@ class OtpAuthTest extends TestCase
         $this->assertLessThanOrEqual(45, $remaining);
     }
 }
-

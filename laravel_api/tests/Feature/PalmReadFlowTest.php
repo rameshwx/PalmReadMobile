@@ -45,7 +45,7 @@ class PalmReadFlowTest extends TestCase
         $createResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->withHeader('Accept', 'application/json')
             ->withHeader('X-Correlation-Id', '11111111-1111-1111-1111-111111111111')
-            ->post('/api/palm-reads', [
+            ->post('/palmread/api/palm-reads', [
                 'image' => UploadedFile::fake()->image('hand.jpg', 800, 1200),
                 'handedness_hint' => 'left',
             ]);
@@ -56,7 +56,7 @@ class PalmReadFlowTest extends TestCase
         $readId = $createResponse->json('id');
 
         $pollResponse = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/palm-reads/'.$readId);
+            ->getJson('/palmread/api/palm-reads/'.$readId);
 
         $pollResponse->assertOk()
             ->assertJsonPath('status', 'completed')
@@ -73,7 +73,7 @@ class PalmReadFlowTest extends TestCase
 
         $feedbackResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->withHeader('X-Correlation-Id', '22222222-2222-2222-2222-222222222222')
-            ->postJson('/api/palm-reads/'.$readId.'/feedback', [
+            ->postJson('/palmread/api/palm-reads/'.$readId.'/feedback', [
                 'is_correct' => false,
                 'note' => 'Head line appears shifted.',
             ]);
@@ -107,7 +107,7 @@ class PalmReadFlowTest extends TestCase
             $response = $this->withHeader('Authorization', 'Bearer '.$token)
                 ->withHeader('Accept', 'application/json')
                 ->withHeader('X-Correlation-Id', (string) Str::uuid())
-                ->post('/api/palm-reads', [
+                ->post('/palmread/api/palm-reads', [
                     'image' => UploadedFile::fake()->image("hand-{$i}.jpg", 800, 1200),
                     'handedness_hint' => 'left',
                 ]);

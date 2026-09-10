@@ -16,7 +16,7 @@ class AdminDashboardTest extends TestCase
         config()->set('admin.username', 'admin');
         config()->set('admin.password', $testPassword);
 
-        $this->get('/admin')->assertStatus(401);
+        $this->get('/palmread/admin')->assertStatus(401);
     }
 
     public function test_admin_dashboard_allows_valid_basic_auth(): void
@@ -30,9 +30,9 @@ class AdminDashboardTest extends TestCase
             'Authorization' => 'Basic '.base64_encode('admin:'.$testPassword),
         ];
 
-        $this->withHeaders($headers)->get('/admin')->assertOk();
-        $this->withHeaders($headers)->get('/admin/users')->assertOk();
-        $this->withHeaders($headers)->get('/admin/uploads')->assertOk();
-        $this->withHeaders($headers)->get('/admin/push')->assertOk();
+        $this->withHeaders($headers)->get('/palmread/admin')->assertOk();
+        $this->withHeaders($headers)->get('/palmread/admin/users')->assertOk();
+        $this->withHeaders($headers)->get('/palmread/admin/uploads')->assertOk();
+        $this->withHeaders($headers)->get('/palmread/admin/push')->assertOk();
     }
 }

@@ -18,7 +18,7 @@ class PushTokenApiTest extends TestCase
 
         $token = str_repeat('a', 64);
 
-        $this->postJson('/api/push-tokens/register', [
+        $this->postJson('/palmread/api/push-tokens/register', [
             'token' => $token,
             'platform' => 'android',
             'app_version' => '1.0.0+1',
@@ -31,7 +31,7 @@ class PushTokenApiTest extends TestCase
             'platform' => 'android',
         ]);
 
-        $this->postJson('/api/push-tokens/unregister', [
+        $this->postJson('/palmread/api/push-tokens/unregister', [
             'token' => $token,
         ])->assertOk()->assertJson(['ok' => true]);
 
@@ -45,13 +45,13 @@ class PushTokenApiTest extends TestCase
         $token = str_repeat('z', 72);
 
         Sanctum::actingAs($userA);
-        $this->postJson('/api/push-tokens/register', [
+        $this->postJson('/palmread/api/push-tokens/register', [
             'token' => $token,
             'platform' => 'android',
         ])->assertOk();
 
         Sanctum::actingAs($userB);
-        $this->postJson('/api/push-tokens/register', [
+        $this->postJson('/palmread/api/push-tokens/register', [
             'token' => $token,
             'platform' => 'android',
         ])->assertOk();

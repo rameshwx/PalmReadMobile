@@ -20,7 +20,7 @@ class AuthFlowTest extends TestCase
             'password' => bcrypt($testPassword),
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/palmread/api/auth/register', [
             'name' => 'Duplicate',
             'email' => 'Existing@Example.com',
             'password' => $testPassword,
@@ -32,7 +32,7 @@ class AuthFlowTest extends TestCase
 
     public function test_forgot_password_returns_generic_success_message(): void
     {
-        $response = $this->postJson('/api/auth/forgot-password', [
+        $response = $this->postJson('/palmread/api/auth/forgot-password', [
             'email' => 'someone@example.com',
         ]);
 
