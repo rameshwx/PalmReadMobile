@@ -76,7 +76,6 @@ services:
       - redis
       - cv_service
     volumes:
-      - ./laravel_api:/var/www/html
       - palm_images:/var/www/html/storage/app/palms
 
   laravel_worker:
@@ -142,7 +141,6 @@ services:
       - redis
       - cv_service
     volumes:
-      - ./laravel_api:/var/www/html
       - palm_images:/var/www/html/storage/app/palms
 
   nginx:
@@ -155,8 +153,6 @@ services:
       - laravel_app
     expose:
       - "80"
-    volumes:
-      - ./laravel_api:/var/www/html
 
   cv_service:
     build:
