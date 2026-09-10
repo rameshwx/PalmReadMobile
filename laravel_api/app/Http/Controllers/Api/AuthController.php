@@ -131,9 +131,11 @@ class AuthController extends Controller
             ->first();
 
         if ($last && $last->resend_available_at && $last->resend_available_at->isFuture()) {
+            $resendAfter = max(1, (int) ceil($now->diffInSeconds($last->resend_available_at)));
+
             return response()->json([
                 'message' => 'Please wait before requesting another code.',
-                'resend_after_seconds' => $last->resend_available_at->diffInSeconds($now),
+                'resend_after_seconds' => $resendAfter,
             ], 429);
         }
 

@@ -21,6 +21,9 @@ class PalmReadFlowTest extends TestCase
         config()->set('queue.default', 'sync');
 
         Http::fake([
+            '*/validate' => Http::response([
+                'roi_meta' => ['image_w' => 800, 'image_h' => 1200],
+            ], 200),
             '*/analyze' => Http::response([
                 'handedness' => 'left',
                 'roi_meta' => ['image_w' => 800, 'image_h' => 1200],

@@ -101,7 +101,9 @@ class OpenRouterReadingTest extends TestCase
 
     public function test_timeout_falls_back_after_one_request(): void
     {
-        Http::fake(function (): never {
+        $requestAttempts = 0;
+        Http::fake(function () use (&$requestAttempts): never {
+            $requestAttempts++;
             throw new ConnectionException('timed out');
         });
 
@@ -114,7 +116,7 @@ class OpenRouterReadingTest extends TestCase
         );
 
         $this->assertSame('rules', $result['result_json']['generator']);
-        Http::assertSentCount(1);
+        $this->assertSame(1, $requestAttempts);
     }
 
     public function test_non_english_response_falls_back_without_a_translation_request(): void
