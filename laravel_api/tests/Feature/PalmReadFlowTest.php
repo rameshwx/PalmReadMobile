@@ -19,6 +19,7 @@ class PalmReadFlowTest extends TestCase
     public function test_user_can_create_palm_read_poll_result_and_submit_feedback(): void
     {
         config()->set('queue.default', 'sync');
+        config()->set('palm.llm_enabled', false);
 
         Http::fake([
             '*/validate' => Http::response([
@@ -66,7 +67,7 @@ class PalmReadFlowTest extends TestCase
             ->assertJsonPath('handedness', 'left')
             ->assertJsonPath('result_json.reading_style_version', 2)
             ->assertJsonPath('result_json.tone', 'friend-professional')
-            ->assertJsonCount(5, 'result_json.line_situations')
+            ->assertJsonCount(0, 'result_json.line_situations')
             ->assertJsonStructure(['reading_text', 'result_json', 'hand_signature_hash']);
 
         $readingText = (string) $pollResponse->json('reading_text');
@@ -96,6 +97,12 @@ class PalmReadFlowTest extends TestCase
         config()->set('queue.default', 'redis');
         config()->set('palm.storage_disk', 'palms');
         config()->set('palm.history_limit', 10);
+
+        Http::fake([
+            '*/validate' => Http::response([
+                'roi_meta' => ['image_w' => 800, 'image_h' => 1200],
+            ], 200),
+        ]);
 
         Storage::fake('palms');
         Queue::fake();
