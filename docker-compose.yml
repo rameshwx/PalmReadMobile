@@ -145,8 +145,11 @@ services:
 
   nginx:
     build:
-      context: ./laravel_api
-      dockerfile: docker/nginx/Dockerfile
+      context: .
+      dockerfile: laravel_api/docker/nginx/Dockerfile
+      args:
+        API_BASE_URL: ${WEB_API_BASE_URL:-${LARAVEL_APP_URL:-http://localhost:8080}}
+        API_BASE_PATH: ${WEB_API_BASE_PATH:-/palmread}
     container_name: palmread_nginx
     restart: unless-stopped
     depends_on:

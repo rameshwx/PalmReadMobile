@@ -37,13 +37,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA7s8VgRAu5yfx54lIyQ9cGdunQPmf1q44',
-    appId: '1:713636760931:web:407f9b7c1a75fe6ff89756',
-    messagingSenderId: '713636760931',
-    projectId: 'palm-read-5cfa3',
-    authDomain: 'palm-read-5cfa3.firebaseapp.com',
-    storageBucket: 'palm-read-5cfa3.firebasestorage.app',
-    measurementId: 'G-5VS7SPPH1S',
+    apiKey: 'AIzaSyDqigh7iKqLU_IiVuFnEyvhnWg5d3sQphw',
+    appId: '1:880279697318:web:556c8390bc45016e948167',
+    messagingSenderId: '880279697318',
+    projectId: 'palm-uxi-asia',
+    authDomain: 'palm-uxi-asia.firebaseapp.com',
+    storageBucket: 'palm-uxi-asia.firebasestorage.app',
+    measurementId: 'G-H0EVQH45L4',
   );
 
   static const FirebaseOptions android = FirebaseOptions(

@@ -8,8 +8,10 @@ Production-oriented monorepo for palm reading with deterministic CPU CV, Laravel
 - `cv_service/`: FastAPI + OpenCV CPU-only CV service.
 
 ## URL Prefixes (Important)
-This stack serves the mobile + admin experience under the `/palmread` path:
+This stack serves the Flutter web experience at the root and keeps Laravel
+behind the `/palmread` path:
 
+- Web app: `http://<host>:8080/`
 - API base: `http://<host>:8080/palmread/api`
 - Admin dashboard: `http://<host>:8080/palmread/admin`
 - Health: `http://<host>:8080/palmread/api/health`
