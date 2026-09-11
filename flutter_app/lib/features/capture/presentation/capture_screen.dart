@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../shared/theme/palm_tokens.dart';
 import '../state/capture_controller.dart';
 import 'preview_screen.dart';
+import 'web_camera_screen.dart';
 
 class CaptureScreen extends ConsumerStatefulWidget {
   const CaptureScreen({super.key});
@@ -38,14 +40,21 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
     final state = ref.read(captureControllerProvider);
     if (state.isEvaluating) return;
 
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.rear,
-      imageQuality: 92,
-      maxWidth: 1600,
-      maxHeight: 1600,
-    );
+    final XFile? file;
+    if (kIsWeb) {
+      file = await Navigator.of(context).push<XFile>(
+        MaterialPageRoute(builder: (_) => const WebCameraScreen()),
+      );
+    } else {
+      final picker = ImagePicker();
+      file = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.rear,
+        imageQuality: 92,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+    }
 
     if (file == null) return;
 

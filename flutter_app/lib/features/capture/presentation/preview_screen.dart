@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -5,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../shared/theme/palm_tokens.dart';
 import '../../upload/presentation/upload_progress_screen.dart';
 import '../state/capture_controller.dart';
+import 'web_camera_screen.dart';
 
 class PreviewScreen extends ConsumerWidget {
   const PreviewScreen({super.key});
@@ -40,14 +42,21 @@ class PreviewScreen extends ConsumerWidget {
     if (result == null) return;
     if (!context.mounted) return;
 
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: result,
-      preferredCameraDevice: CameraDevice.rear,
-      imageQuality: 92,
-      maxWidth: 1600,
-      maxHeight: 1600,
-    );
+    final XFile? file;
+    if (kIsWeb && result == ImageSource.camera) {
+      file = await Navigator.of(context).push<XFile>(
+        MaterialPageRoute(builder: (_) => const WebCameraScreen()),
+      );
+    } else {
+      final picker = ImagePicker();
+      file = await picker.pickImage(
+        source: result,
+        preferredCameraDevice: CameraDevice.rear,
+        imageQuality: 92,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+    }
     if (file == null) return;
 
     await ref.read(captureControllerProvider.notifier).setImage(file);
@@ -60,11 +69,11 @@ class PreviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(captureControllerProvider);
-    final file = state.imageFile;
+    final imageBytes = state.imageBytes;
     final quality = state.quality;
     final text = Theme.of(context).textTheme;
 
-    if (file == null) {
+    if (imageBytes == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Verify Photo')),
         body: const Center(child: Text('No image selected.')),
@@ -135,7 +144,7 @@ class PreviewScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(18),
                       child: AspectRatio(
                         aspectRatio: 3 / 4,
-                        child: Image.file(file, fit: BoxFit.cover),
+                        child: Image.memory(imageBytes, fit: BoxFit.cover),
                       ),
                     ),
                     Positioned(
@@ -248,7 +257,7 @@ class PreviewScreen extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          "Hand check isn't available on this device. We'll validate the image after upload.",
+                          'Hand validation will happen securely during upload.',
                           style: text.bodyMedium?.copyWith(
                             color: PalmTokens.textMain,
                             fontWeight: FontWeight.w700,

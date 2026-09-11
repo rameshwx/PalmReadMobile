@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as path;
 
 import '../../../core/networking/dio_client.dart';
 import '../domain/palm_read_models.dart';
@@ -18,16 +16,17 @@ class PalmReadsApi {
   final Dio _dio;
 
   Future<PalmReadCreateResponse> createPalmRead({
-    required File imageFile,
+    required Uint8List imageBytes,
+    required String filename,
     required String handednessHint,
     ProgressCallback? onSendProgress,
     CancelToken? cancelToken,
   }) async {
     final formData = FormData.fromMap({
       'handedness_hint': handednessHint,
-      'image': await MultipartFile.fromFile(
-        imageFile.path,
-        filename: path.basename(imageFile.path),
+      'image': MultipartFile.fromBytes(
+        imageBytes,
+        filename: filename,
       ),
     });
 

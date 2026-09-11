@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,21 +9,24 @@ import '../domain/capture_quality_result.dart';
 
 class CaptureState {
   const CaptureState({
-    this.imageFile,
+    this.imageBytes,
+    this.imageFilename,
     this.quality,
     this.handDetected,
     this.handedness = 'right',
     this.isEvaluating = false,
   });
 
-  final File? imageFile;
+  final Uint8List? imageBytes;
+  final String? imageFilename;
   final CaptureQualityResult? quality;
   final bool? handDetected;
   final String handedness;
   final bool isEvaluating;
 
   CaptureState copyWith({
-    File? imageFile,
+    Uint8List? imageBytes,
+    String? imageFilename,
     CaptureQualityResult? quality,
     bool? handDetected,
     String? handedness,
@@ -31,7 +34,8 @@ class CaptureState {
     bool clearImage = false,
   }) {
     return CaptureState(
-      imageFile: clearImage ? null : (imageFile ?? this.imageFile),
+      imageBytes: clearImage ? null : (imageBytes ?? this.imageBytes),
+      imageFilename: clearImage ? null : (imageFilename ?? this.imageFilename),
       quality: clearImage ? null : (quality ?? this.quality),
       handDetected: clearImage ? null : (handDetected ?? this.handDetected),
       handedness: handedness ?? this.handedness,
@@ -50,24 +54,26 @@ class CaptureController extends StateNotifier<CaptureState> {
 
   Future<void> setImage(XFile file) async {
     final handedness = state.handedness;
+    final bytes = await file.readAsBytes();
+    final filename = _filenameFor(file);
+
     // Set the image immediately so Verify Photo can render it while we run checks.
     state = CaptureState(
-      imageFile: File(file.path),
+      imageBytes: bytes,
+      imageFilename: filename,
       quality: null,
       handDetected: null,
       isEvaluating: true,
       handedness: handedness,
     );
     try {
-      final bytesFuture = file.readAsBytes();
       final handFuture = PalmDetector.detectHand(file.path);
-
-      final bytes = await bytesFuture;
       final quality = await ImageQuality.evaluateAsync(bytes);
       final handDetected = await handFuture;
 
       state = CaptureState(
-        imageFile: File(file.path),
+        imageBytes: bytes,
+        imageFilename: filename,
         quality: quality,
         handDetected: handDetected,
         handedness: handedness,
@@ -75,11 +81,17 @@ class CaptureController extends StateNotifier<CaptureState> {
       );
     } catch (_) {
       state = CaptureState(
-        imageFile: File(file.path),
+        imageBytes: bytes,
+        imageFilename: filename,
         isEvaluating: false,
         handedness: handedness,
       );
     }
+  }
+
+  String _filenameFor(XFile file) {
+    final name = file.name.trim();
+    return name.isEmpty ? 'palm.jpg' : name;
   }
 
   void setHandedness(String handedness) {

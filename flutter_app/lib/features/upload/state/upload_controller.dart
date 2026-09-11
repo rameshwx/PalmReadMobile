@@ -66,7 +66,7 @@ class UploadController extends StateNotifier<UploadState> {
 
   Future<void> startUpload() async {
     final capture = ref.read(captureControllerProvider);
-    if (capture.imageFile == null) {
+    if (capture.imageBytes == null) {
       state = state.copyWith(status: 'failed', error: 'No image selected');
       return;
     }
@@ -86,7 +86,8 @@ class UploadController extends StateNotifier<UploadState> {
     try {
       final api = ref.read(palmReadsApiProvider);
       final create = await api.createPalmRead(
-        imageFile: capture.imageFile!,
+        imageBytes: capture.imageBytes!,
+        filename: capture.imageFilename ?? 'palm.jpg',
         handednessHint: capture.handedness,
         cancelToken: _cancelToken,
         onSendProgress: (sent, total) {

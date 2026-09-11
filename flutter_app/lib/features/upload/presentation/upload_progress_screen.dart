@@ -49,7 +49,7 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
           next.readId != null) {
         final readId = next.readId!;
         final capture = ref.read(captureControllerProvider);
-        if (capture.imageFile != null) {
+        if (capture.imageBytes != null) {
           ref.read(captureControllerProvider.notifier).clear();
         }
         ref.read(uploadControllerProvider.notifier).reset();
@@ -269,7 +269,7 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
                                         child: Stack(
                                           children: [
                                             Positioned.fill(
-                                              child: capture.imageFile == null
+                                              child: capture.imageBytes == null
                                                   ? Container(
                                                       color: Colors.black
                                                           .withValues(
@@ -300,8 +300,8 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
                                                         1,
                                                         0,
                                                       ]),
-                                                      child: Image.file(
-                                                        capture.imageFile!,
+                                                      child: Image.memory(
+                                                        capture.imageBytes!,
                                                         fit: BoxFit.cover,
                                                       ),
                                                     ),
