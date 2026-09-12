@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
 
 /// A live browser camera flow for Flutter Web.
 ///
@@ -132,85 +135,204 @@ class _WebCameraScreenState extends State<WebCameraScreen> {
         controller != null &&
         controller.value.isInitialized;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Take Palm Photo'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
+    final text = Theme.of(context).textTheme;
+    final header = Row(
+      children: [
+        IconButton(
           onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close),
+          tooltip: 'Close camera',
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                'Take Palm Photo',
+                style: text.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'CAMERA CAPTURE',
+                style: text.labelSmall?.copyWith(
+                  color: PalmTokens.primaryDark,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            showDialog<void>(
+              context: context,
+              builder: (_) => const AlertDialog(
+                title: Text('Camera tips'),
+                content: Text(
+                  'Keep your palm flat, centered, and well lit. Spread your fingers slightly and avoid shadows.',
+                ),
+              ),
+            );
+          },
+          icon: const Icon(Icons.help_outline),
+          tooltip: 'Camera tips',
+        ),
+      ],
+    );
+
+    return Scaffold(
+      body: SafeArea(
+        child: PalmPageContainer(
+          maxWidth: 1240,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final desktop = constraints.maxWidth >= 1024;
+              final controls = _cameraControls(context, canCapture, text);
+              if (desktop) {
+                return Column(
+                  children: [
+                    header,
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _cameraCard(controller, canCapture)),
+                          const SizedBox(width: 48),
+                          SizedBox(width: 380, child: controls),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
+                children: [
+                  header,
+                  const SizedBox(height: 12),
+                  Expanded(child: _cameraCard(controller, canCapture)),
+                  const SizedBox(height: 16),
+                  controls,
+                ],
+              );
+            },
+          ),
         ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: AspectRatio(
-                    aspectRatio: 3 / 4,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
-                      child: _buildPreview(controller, canCapture),
-                    ),
+    );
+  }
+
+  Widget _cameraCard(CameraController? controller, bool canCapture) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxHeight =
+            constraints.maxHeight.isFinite ? constraints.maxHeight : 680.0;
+        final maxWidth =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 520.0;
+        final width = math.min(520.0, math.min(maxWidth, maxHeight * 0.75));
+        return Center(
+          child: SizedBox(
+            width: width,
+            height: width * 4 / 3,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
+                boxShadow: PalmTokens.shadowCard,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
+                child: _buildPreview(controller, canCapture),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _cameraControls(
+    BuildContext context,
+    bool canCapture,
+    TextTheme text,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PalmSurface(
+          color: PalmTokens.primary.withValues(alpha: 0.08),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline, color: PalmTokens.primaryDark),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Your photo stays in this session until you choose to upload it.',
+                  style: text.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        if (_error != null)
+          PalmSurface(
+            color: PalmTokens.danger.withValues(alpha: 0.08),
+            child: Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: text.bodyMedium?.copyWith(
+                color: PalmTokens.textMain,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: Column(
-                children: [
-                  if (_error != null) ...[
-                    Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: PalmTokens.textMain,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                  ] else
-                    const Text(
-                      'Keep your palm flat, centered, and well lit.',
-                      textAlign: TextAlign.center,
-                    ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _choosePhoto,
-                          icon: const Icon(Icons.photo_library_outlined),
-                          label: const Text('Choose Photo'),
+          )
+        else
+          Text(
+            'Keep your palm flat, centered, and well lit.',
+            textAlign: TextAlign.center,
+            style: text.bodyLarge?.copyWith(
+              color: PalmTokens.textSub,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _choosePhoto,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Choose Photo'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: canCapture ? _takePicture : null,
+                icon: _capturing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: canCapture ? _takePicture : null,
-                          icon: _capturing
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.camera_alt_outlined),
-                          label: const Text('Capture'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      )
+                    : const Icon(Icons.camera_alt_outlined),
+                label: const Text('Capture'),
               ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 

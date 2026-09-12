@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
 import '../state/auth_controller.dart';
 import 'otp_screen.dart';
 
@@ -136,65 +137,70 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     height: 1.25,
                                   ),
                                 ),
-                                const SizedBox(height: 42),
-                                Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Text(
-                                        'Email Address',
-                                        style: text.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      TextFormField(
-                                        controller: _emailController,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        autofillHints: const [
-                                          AutofillHints.email
-                                        ],
-                                        validator: _validateEmail,
-                                        enabled: !_isSubmitting,
-                                        decoration: const InputDecoration(
-                                          hintText: 'you@example.com',
-                                          prefixIcon: Icon(Icons.mail_outline),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 22),
-                                      FilledButton.icon(
-                                        onPressed:
-                                            _isSubmitting ? null : _sendOtp,
-                                        icon: _isSubmitting
-                                            ? const SizedBox(
-                                                height: 18,
-                                                width: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: PalmTokens.neutralDark,
-                                                ),
-                                              )
-                                            : const Icon(
-                                                Icons.mark_email_read_outlined),
-                                        label: Text(
-                                          _isSubmitting
-                                              ? 'Sending...'
-                                              : 'Send OTP',
-                                        ),
-                                        style: FilledButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 20, horizontal: 18),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(22),
+                                const SizedBox(height: 30),
+                                PalmSurface(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Text(
+                                          'Email Address',
+                                          style: text.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w800,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 10),
+                                        TextFormField(
+                                          controller: _emailController,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          autofillHints: const [
+                                            AutofillHints.email
+                                          ],
+                                          validator: _validateEmail,
+                                          enabled: !_isSubmitting,
+                                          decoration: const InputDecoration(
+                                            hintText: 'you@example.com',
+                                            prefixIcon:
+                                                Icon(Icons.mail_outline),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 22),
+                                        FilledButton.icon(
+                                          onPressed:
+                                              _isSubmitting ? null : _sendOtp,
+                                          icon: _isSubmitting
+                                              ? const SizedBox(
+                                                  height: 18,
+                                                  width: 18,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color:
+                                                        PalmTokens.neutralDark,
+                                                  ),
+                                                )
+                                              : const Icon(Icons
+                                                  .mark_email_read_outlined),
+                                          label: Text(
+                                            _isSubmitting
+                                                ? 'Sending...'
+                                                : 'Send OTP',
+                                          ),
+                                          style: FilledButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 20, horizontal: 18),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(22),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 const Spacer(),

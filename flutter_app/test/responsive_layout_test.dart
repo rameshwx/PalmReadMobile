@@ -1,8 +1,14 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:palm_read_mobile/app.dart';
 import 'package:palm_read_mobile/features/capture/presentation/capture_screen.dart';
+import 'package:palm_read_mobile/features/capture/presentation/preview_screen.dart';
+import 'package:palm_read_mobile/features/capture/domain/capture_quality_result.dart';
+import 'package:palm_read_mobile/features/capture/state/capture_controller.dart';
 import 'package:palm_read_mobile/features/history/presentation/history_screen.dart';
 import 'package:palm_read_mobile/features/history/state/history_controller.dart';
 import 'package:palm_read_mobile/features/result/domain/palm_read_models.dart';
@@ -163,6 +169,48 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
   });
 
+  testWidgets('preview layout remains overflow-free across viewports',
+      (tester) async {
+    for (final size in const [
+      Size(390, 844),
+      Size(1024, 900),
+      Size(1440, 900),
+    ]) {
+      final controller = CaptureController();
+      controller.state = CaptureState(
+        imageBytes: _samplePng,
+        imageFilename: 'palm.png',
+        quality: const CaptureQualityResult(
+          brightness: 120,
+          blurVariance: 80,
+          palmCoverage: 0.3,
+          centerOffset: 0.05,
+          isBrightnessOk: true,
+          isBlurOk: true,
+          isPalmSizeOk: true,
+          isCentered: true,
+        ),
+        handDetected: true,
+        handedness: 'right',
+      );
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            captureControllerProvider.overrideWith((ref) => controller),
+          ],
+          child: const MaterialApp(home: PreviewScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Verify Photo'), findsOneWidget);
+      expect(find.text('Upload for Analysis'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+  });
+
   testWidgets('history layout uses a wide grid without mobile overflow',
       (tester) async {
     for (final size in const [
@@ -200,3 +248,6 @@ Map<String, String> _line(String key, String situation) {
     'suggestion': 'Keep one practical habit.',
   };
 }
+
+final Uint8List _samplePng = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');

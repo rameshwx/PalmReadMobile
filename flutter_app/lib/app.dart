@@ -92,18 +92,29 @@ class _HomeShellState extends ConsumerState<_HomeShell> {
   }
 
   Future<void> _openAccount() async {
-    await showModalBottomSheet<void>(
+    await showPalmSheet<void>(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: ListTile(
-          leading: const Icon(Icons.logout),
-          title: const Text('Log out'),
-          onTap: () async {
-            Navigator.of(sheetContext).pop();
-            await ref.read(authControllerProvider.notifier).logout();
-          },
-        ),
+      builder: (sheetContext) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Account & settings',
+            style: Theme.of(sheetContext)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 14),
+          PalmModalOption(
+            icon: Icons.logout,
+            title: 'Log out',
+            subtitle: 'End this session on this device',
+            onTap: () async {
+              Navigator.of(sheetContext).pop();
+              await ref.read(authControllerProvider.notifier).logout();
+            },
+          ),
+        ],
       ),
     );
   }

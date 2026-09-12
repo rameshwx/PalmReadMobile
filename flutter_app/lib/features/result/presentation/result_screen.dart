@@ -108,9 +108,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   }
 
   Future<void> _openFeedbackSheet() async {
-    await showModalBottomSheet<bool>(
+    await showPalmSheet<bool>(
       context: context,
-      isScrollControlled: true,
       builder: (_) => FeedbackSheet(
         palmReadId: widget.readId,
         title: 'Was this accurate?',
@@ -539,35 +538,40 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   }
 
   Future<void> _openShareSheet(PalmReadDetail detail) async {
-    await showModalBottomSheet<void>(
+    await showPalmSheet<void>(
       context: context,
-      showDragHandle: true,
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.text_snippet_outlined),
-                  title: const Text('Share Text'),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await _shareText(detail);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.image_outlined),
-                  title: const Text('Share Summary Image'),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await _shareSummaryImage(detail);
-                  },
-                ),
-              ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Share your reading',
+              style: Theme.of(ctx)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w900),
             ),
-          ),
+            const SizedBox(height: 14),
+            PalmModalOption(
+              icon: Icons.text_snippet_outlined,
+              title: 'Share Text',
+              subtitle: 'Copy the key insights and narrative',
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await _shareText(detail);
+              },
+            ),
+            const SizedBox(height: 4),
+            PalmModalOption(
+              icon: Icons.image_outlined,
+              title: 'Share Summary Image',
+              subtitle: 'Create a visual card for sharing',
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await _shareSummaryImage(detail);
+              },
+            ),
+          ],
         );
       },
     );

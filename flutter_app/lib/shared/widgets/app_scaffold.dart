@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'responsive_page.dart';
+
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
     super.key,
@@ -19,7 +21,9 @@ class AppScaffold extends StatelessWidget {
         title: Text(title),
         actions: actions,
       ),
-      body: child,
+      body: SafeArea(
+        child: PalmPageContainer(child: child),
+      ),
     );
   }
 }

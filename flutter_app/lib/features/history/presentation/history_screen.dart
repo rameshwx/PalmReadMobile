@@ -24,27 +24,30 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   _HistoryFilter _filter = _HistoryFilter.all;
 
   Future<void> _openSettings() async {
-    await showModalBottomSheet<void>(
+    await showPalmSheet<void>(
       context: context,
-      showDragHandle: true,
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Logout'),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await ref.read(authControllerProvider.notifier).logout();
-                  },
-                ),
-              ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'History settings',
+              style: Theme.of(ctx)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w900),
             ),
-          ),
+            const SizedBox(height: 14),
+            PalmModalOption(
+              icon: Icons.logout,
+              title: 'Log out',
+              subtitle: 'End this session on this device',
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await ref.read(authControllerProvider.notifier).logout();
+              },
+            ),
+          ],
         );
       },
     );

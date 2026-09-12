@@ -35,13 +35,78 @@ class PalmTheme {
         foregroundColor: PalmTokens.textMain,
         elevation: 0,
         centerTitle: true,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
         titleTextStyle: textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w800,
           color: PalmTokens.textMain,
         ),
       ),
-      snackBarTheme: const SnackBarThemeData(
+      dialogTheme: DialogThemeData(
+        backgroundColor: PalmTokens.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
+        ),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w900,
+          color: PalmTokens.textMain,
+        ),
+        contentTextStyle: textTheme.bodyLarge?.copyWith(
+          color: PalmTokens.textSub,
+          height: 1.4,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        showDragHandle: true,
+        dragHandleColor: PalmTokens.textSub.withValues(alpha: 0.28),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF0F172A),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(PalmTokens.radiusMd),
+        ),
+        insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: PalmTokens.surface,
+        indicatorColor: PalmTokens.primary.withValues(alpha: 0.16),
+        elevation: 0,
+        labelTextStyle: WidgetStatePropertyAll(
+          textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: PalmTokens.primary,
+          foregroundColor: PalmTokens.neutralDark,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          textStyle:
+              textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(PalmTokens.radiusMd),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: PalmTokens.primaryDark,
+          textStyle:
+              textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
       ),
       cardTheme: CardThemeData(
         color: PalmTokens.surface,

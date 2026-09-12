@@ -191,11 +191,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             child: PalmPageContainer(
               maxWidth: 560,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: Card(
-                elevation: 0,
-                color: PalmTokens.surface.withValues(alpha: 0.78),
+              child: PalmSurface(
+                color: PalmTokens.surface.withValues(alpha: 0.86),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -254,22 +254,31 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(_digits, (i) {
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                  right: i == _digits - 1 ? 0 : 10),
-                              child: _OtpBox(
-                                controller: _controllers[i],
-                                focusNode: _focusNodes[i],
-                                enabled: !_verifying,
-                                onChanged: (v) => _setDigit(i, v),
-                              ),
-                            );
-                          }),
-                        ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const gap = 10.0;
+                          final boxWidth =
+                              ((constraints.maxWidth - (gap * (_digits - 1))) /
+                                      _digits)
+                                  .clamp(44.0, 58.0)
+                                  .toDouble();
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(_digits, (i) {
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                    right: i == _digits - 1 ? 0 : gap),
+                                child: _OtpBox(
+                                  width: boxWidth,
+                                  controller: _controllers[i],
+                                  focusNode: _focusNodes[i],
+                                  enabled: !_verifying,
+                                  onChanged: (v) => _setDigit(i, v),
+                                ),
+                              );
+                            }),
+                          );
+                        },
                       ),
                       const SizedBox(height: 26),
                       FilledButton.icon(
@@ -378,12 +387,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
 class _OtpBox extends StatelessWidget {
   const _OtpBox({
+    required this.width,
     required this.controller,
     required this.focusNode,
     required this.enabled,
     required this.onChanged,
   });
 
+  final double width;
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool enabled;
@@ -394,7 +405,7 @@ class _OtpBox extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     return SizedBox(
-      width: 58,
+      width: width,
       height: 72,
       child: TextField(
         controller: controller,

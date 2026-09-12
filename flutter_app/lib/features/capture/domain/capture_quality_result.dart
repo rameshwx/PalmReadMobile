@@ -20,8 +20,8 @@ class CaptureQualityResult {
   final bool isCentered;
 
   bool get passesHardGates => isBrightnessOk && isBlurOk;
-  // Heuristic: keep this low to reduce false negatives; server-side CV is the
-  // source of truth and will reject non-hand uploads.
+  // This is an intentionally inclusive browser-safe signal. Android uses
+  // its native detector; the server remains the authoritative final check.
   bool get isLikelyHand => palmCoverage >= 0.02;
 
   factory CaptureQualityResult.fromMap(Map<String, dynamic> map) {

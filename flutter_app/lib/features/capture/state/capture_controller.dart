@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -67,9 +66,13 @@ class CaptureController extends StateNotifier<CaptureState> {
       handedness: handedness,
     );
     try {
-      final handFuture = PalmDetector.detectHand(file.path);
+      final handFuture = PalmDetector.detectHand(
+        file.path,
+        imageBytes: bytes,
+      );
       final quality = await ImageQuality.evaluateAsync(bytes);
-      final handDetected = await handFuture;
+      final handDetected =
+          await handFuture ?? (kIsWeb ? quality.isLikelyHand : null);
 
       state = CaptureState(
         imageBytes: bytes,
@@ -84,6 +87,7 @@ class CaptureController extends StateNotifier<CaptureState> {
         imageBytes: bytes,
         imageFilename: filename,
         isEvaluating: false,
+        handDetected: kIsWeb ? false : null,
         handedness: handedness,
       );
     }
