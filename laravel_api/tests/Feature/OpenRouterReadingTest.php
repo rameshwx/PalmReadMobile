@@ -179,7 +179,6 @@ class OpenRouterReadingTest extends TestCase
             signatureHash: hash('sha256', 'fixture-signature-1'),
             handedness: 'left',
             quantized: $this->quantizedBuckets(),
-            baseResultJson: [],
             lineSignals: $this->lineSignals(),
         );
         $second = app(ReadingGenerator::class)->generate(
@@ -187,7 +186,6 @@ class OpenRouterReadingTest extends TestCase
             signatureHash: hash('sha256', 'fixture-signature-2'),
             handedness: 'left',
             quantized: $this->quantizedBuckets(),
-            baseResultJson: [],
             lineSignals: $this->lineSignals(),
         );
 
