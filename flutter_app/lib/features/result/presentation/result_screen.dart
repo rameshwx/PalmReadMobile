@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
 import '../../feedback/presentation/feedback_sheet.dart';
 import '../data/palm_reads_api.dart';
 import '../domain/palm_read_models.dart';
@@ -572,12 +573,198 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     );
   }
 
+  Widget _imageCard(AsyncValue<Uint8List?> imageBytesAsync) {
+    return Container(
+      decoration: BoxDecoration(
+        color: PalmTokens.surface,
+        borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
+        boxShadow: PalmTokens.shadowSoft,
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: AspectRatio(
+          aspectRatio: 4 / 5,
+          child: imageBytesAsync.when(
+            data: (bytes) {
+              if (bytes == null || bytes.isEmpty) {
+                return Container(
+                  color: Colors.black12,
+                  alignment: Alignment.center,
+                  child: const Text('Photo unavailable'),
+                );
+              }
+              return Image.memory(bytes, fit: BoxFit.cover);
+            },
+            loading: () => Container(
+              color: Colors.black12,
+              alignment: Alignment.center,
+              child: const CircularProgressIndicator(),
+            ),
+            error: (_, __) => Container(
+              color: Colors.black12,
+              alignment: Alignment.center,
+              child: const Text('Photo unavailable'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryCards(String direction, String suggestion) {
+    final cards = [
+      _SummaryCard(
+        title: 'Likely Direction',
+        value: direction,
+        icon: Icons.explore,
+        tint: PalmTokens.surface,
+      ),
+      _SummaryCard(
+        title: 'Suggestion',
+        value: suggestion,
+        icon: Icons.tips_and_updates,
+        tint: PalmTokens.primary.withValues(alpha: 0.10),
+        border: PalmTokens.primary.withValues(alpha: 0.18),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 430) {
+          return Column(
+            children: [cards[0], const SizedBox(height: 12), cards[1]],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: cards[0]),
+            const SizedBox(width: 12),
+            Expanded(child: cards[1]),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _lineCards(List<Map<String, dynamic>> situations) {
+    final cards = [
+      for (final meta in _LineMeta.all)
+        _LineAccordion(
+          meta: meta,
+          initiallyOpen: meta.key == 'life',
+          situation: situations
+              .where((entry) =>
+                  (entry['key']?.toString() ?? '').toLowerCase() == meta.key)
+              .cast<Map<String, dynamic>>()
+              .firstOrNull,
+        ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 760) {
+          return Column(
+            children: [
+              for (final card in cards) ...[
+                card,
+                const SizedBox(height: 12),
+              ],
+            ],
+          );
+        }
+
+        final width = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final card in cards) SizedBox(width: width, child: card),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _resultContent(
+    BuildContext context,
+    PalmReadDetail detail,
+    AsyncValue<Uint8List?> imageBytesAsync,
+  ) {
+    final situations = _lineSituations(detail);
+    final direction = _pickPrediction(situations);
+    final suggestion = _pickSuggestion(detail, situations);
+    final narrative = _narrative(detail);
+    final desktop = MediaQuery.sizeOf(context).width >= 1024;
+    final text = Theme.of(context).textTheme;
+    final image = _imageCard(imageBytesAsync);
+    final summary = _summaryCards(direction, suggestion);
+    final narrativeCard = _NarrativeCard(
+      narrative: narrative,
+      onThumbUp: () => _submitThumb(true),
+      onThumbDown: () => _openFeedbackSheet(),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (desktop)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 420, child: image),
+              const SizedBox(width: 26),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    summary,
+                    const SizedBox(height: 18),
+                    narrativeCard,
+                  ],
+                ),
+              ),
+            ],
+          )
+        else ...[
+          image,
+          const SizedBox(height: 18),
+          summary,
+        ],
+        const SizedBox(height: 30),
+        Text(
+          'Detailed Analysis',
+          style: text.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (situations.isEmpty)
+          Text(
+            'Detailed line insights could not be recovered for this reading.',
+            style: text.bodyMedium?.copyWith(
+              color: PalmTokens.textSub,
+              fontWeight: FontWeight.w600,
+            ),
+          )
+        else
+          _lineCards(situations),
+        if (!desktop) ...[
+          const SizedBox(height: 16),
+          narrativeCard,
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(palmReadDetailProvider(widget.readId));
     final imageBytesAsync = ref.watch(palmImageBytesProvider(widget.readId));
-    final text = Theme.of(context).textTheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Analysis'),
@@ -617,161 +804,22 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
               ref.invalidate(palmImageBytesProvider(widget.readId));
             },
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
+              padding: const EdgeInsets.only(bottom: 140),
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: PalmTokens.surface,
-                    borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
-                    boxShadow: PalmTokens.shadowSoft,
-                    border:
-                        Border.all(color: Colors.black.withValues(alpha: 0.06)),
-                  ),
-                  padding: const EdgeInsets.all(10),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: AspectRatio(
-                      aspectRatio: 4 / 5,
-                      child: imageBytesAsync.when(
-                        data: (bytes) {
-                          if (bytes == null || bytes.isEmpty) {
-                            return Container(
-                              color: Colors.black12,
-                              alignment: Alignment.center,
-                              child: const Text('Photo unavailable'),
-                            );
-                          }
-                          return Image.memory(bytes, fit: BoxFit.cover);
-                        },
-                        loading: () => Container(
-                          color: Colors.black12,
-                          alignment: Alignment.center,
-                          child: const CircularProgressIndicator(),
-                        ),
-                        error: (_, __) => Container(
-                          color: Colors.black12,
-                          alignment: Alignment.center,
-                          child: const Text('Photo unavailable'),
-                        ),
-                      ),
+                PalmPageContainer(
+                  maxWidth: 1320,
+                  child: detailAsync.when(
+                    data: (detail) => _resultContent(
+                      context,
+                      detail,
+                      imageBytesAsync,
                     ),
+                    loading: () => const SizedBox(
+                      height: 420,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (error, _) => Center(child: Text('Failed: $error')),
                   ),
-                ),
-                const SizedBox(height: 18),
-                detailAsync.when(
-                  data: (detail) {
-                    final situations = _lineSituations(detail);
-                    final direction = _pickPrediction(situations);
-                    final suggestion = _pickSuggestion(detail, situations);
-
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 430;
-                        if (compact) {
-                          return Column(
-                            children: [
-                              _SummaryCard(
-                                title: 'Likely Direction',
-                                value: direction,
-                                icon: Icons.explore,
-                                tint: PalmTokens.surface,
-                              ),
-                              const SizedBox(height: 12),
-                              _SummaryCard(
-                                title: 'Suggestion',
-                                value: suggestion,
-                                icon: Icons.tips_and_updates,
-                                tint: PalmTokens.primary.withValues(alpha: 0.10),
-                                border: PalmTokens.primary.withValues(alpha: 0.18),
-                              ),
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: _SummaryCard(
-                                title: 'Likely Direction',
-                                value: direction,
-                                icon: Icons.explore,
-                                tint: PalmTokens.surface,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _SummaryCard(
-                                title: 'Suggestion',
-                                value: suggestion,
-                                icon: Icons.tips_and_updates,
-                                tint: PalmTokens.primary.withValues(alpha: 0.10),
-                                border: PalmTokens.primary.withValues(alpha: 0.18),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-                const SizedBox(height: 26),
-                Text(
-                  'Detailed Analysis',
-                  style: text.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                detailAsync.when(
-                  data: (detail) {
-                    final situations = _lineSituations(detail);
-                    if (situations.isEmpty) {
-                      return Text(
-                        'Line analysis is not available yet for this reading.',
-                        style: text.bodyMedium?.copyWith(
-                          color: PalmTokens.textSub,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      children: [
-                        for (final meta in _LineMeta.all) ...[
-                          _LineAccordion(
-                            meta: meta,
-                            initiallyOpen: meta.key == 'life',
-                            situation: situations
-                                .where((e) =>
-                                    (e['key']?.toString() ?? '')
-                                        .toLowerCase() ==
-                                    meta.key)
-                                .cast<Map<String, dynamic>>()
-                                .firstOrNull,
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                      ],
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-                const SizedBox(height: 4),
-                detailAsync.when(
-                  data: (detail) {
-                    final narrative = _narrative(detail);
-                    return _NarrativeCard(
-                      narrative: narrative,
-                      onThumbUp: () => _submitThumb(true),
-                      onThumbDown: () => _openFeedbackSheet(),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -1087,27 +1135,58 @@ class _NarrativeCard extends StatelessWidget {
             color: Colors.white.withValues(alpha: 0.10),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                'Was this accurate?',
-                style: text.labelLarge?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: onThumbUp,
-                icon: Icon(Icons.thumb_up,
-                    size: 20, color: Colors.white.withValues(alpha: 0.60)),
-              ),
-              IconButton(
-                onPressed: onThumbDown,
-                icon: Icon(Icons.thumb_down,
-                    size: 20, color: Colors.white.withValues(alpha: 0.60)),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final actions = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: onThumbUp,
+                    icon: Icon(Icons.thumb_up,
+                        size: 20, color: Colors.white.withValues(alpha: 0.60)),
+                  ),
+                  IconButton(
+                    onPressed: onThumbDown,
+                    icon: Icon(Icons.thumb_down,
+                        size: 20, color: Colors.white.withValues(alpha: 0.60)),
+                  ),
+                ],
+              );
+
+              if (constraints.maxWidth < 300) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Was this accurate?',
+                      style: text.labelLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Align(alignment: Alignment.centerRight, child: actions),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Was this accurate?',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.labelLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  actions,
+                ],
+              );
+            },
           ),
         ],
       ),

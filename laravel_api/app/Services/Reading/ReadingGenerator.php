@@ -8,7 +8,8 @@ class ReadingGenerator
 {
     public function __construct(
         private readonly ReadingRuleEngine $ruleEngine,
-        private readonly LlmReadingGenerator $llmGenerator
+        private readonly LlmReadingGenerator $llmGenerator,
+        private readonly RuleLineSituationGenerator $lineSituationGenerator,
     ) {
     }
 
@@ -59,12 +60,14 @@ class ReadingGenerator
         $baseText = (string) ($base['reading_text'] ?? '');
         $baseResultJson['generator'] = 'rules';
         $baseResultJson['reading_style_version'] = $baseResultJson['reading_style_version'] ?? 2;
-        $baseResultJson['line_situations'] = [];
+        $lineSituations = $this->lineSituationGenerator->generate($lineSignals, $quantized);
+        $baseResultJson['line_situations'] = $lineSituations;
+        $baseResultJson['line_analysis_source'] = 'deterministic-cv';
 
         return [
             'result_json' => $baseResultJson,
             'reading_text' => $baseText,
-            'line_situations' => [],
+            'line_situations' => $lineSituations,
         ];
     }
 

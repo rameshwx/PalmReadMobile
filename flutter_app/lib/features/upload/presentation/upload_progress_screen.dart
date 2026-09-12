@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
 import '../../capture/state/capture_controller.dart';
 import '../../result/presentation/result_screen.dart';
 import '../state/upload_controller.dart';
@@ -165,351 +166,362 @@ class _UploadProgressScreenState extends ConsumerState<UploadProgressScreen>
         children: [
           const Positioned.fill(child: _AnalyzingBackground()),
           SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-                  child: Row(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.psychology,
-                              color: PalmTokens.primaryDark
-                                  .withValues(alpha: 0.9)),
-                          const SizedBox(width: 8),
-                          Text(
-                            'PalmRead',
-                            style: text.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: PalmTokens.surface.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.06)),
-                        ),
-                        child: Text(
-                          'ID: $idShort',
-                          style: text.labelSmall?.copyWith(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.w800,
-                            color: PalmTokens.textSub,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            child: PalmPageContainer(
+              maxWidth: 920,
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+                    child: Row(
                       children: [
-                        SizedBox(
-                          width: 320,
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: PalmTokens.primary
-                                            .withValues(alpha: 0.20),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned.fill(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: PalmTokens.primary
-                                              .withValues(alpha: 0.10),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned.fill(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(22),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: PalmTokens.surface,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: PalmTokens.primary
-                                                .withValues(alpha: 0.10),
-                                            blurRadius: 24,
-                                            offset: const Offset(0, 14),
-                                          ),
-                                        ],
-                                        border: Border.all(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.06),
-                                        ),
-                                      ),
-                                      child: ClipOval(
-                                        child: Stack(
-                                          children: [
-                                            Positioned.fill(
-                                              child: capture.imageBytes == null
-                                                  ? Container(
-                                                      color: Colors.black
-                                                          .withValues(
-                                                              alpha: 0.04),
-                                                    )
-                                                  : ColorFiltered(
-                                                      colorFilter:
-                                                          const ColorFilter
-                                                              .matrix([
-                                                        0.2126,
-                                                        0.7152,
-                                                        0.0722,
-                                                        0,
-                                                        0,
-                                                        0.2126,
-                                                        0.7152,
-                                                        0.0722,
-                                                        0,
-                                                        0,
-                                                        0.2126,
-                                                        0.7152,
-                                                        0.0722,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        1,
-                                                        0,
-                                                      ]),
-                                                      child: Image.memory(
-                                                        capture.imageBytes!,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                            ),
-                                            Positioned.fill(
-                                              child: AnimatedBuilder(
-                                                animation: _spin,
-                                                builder: (context, _) {
-                                                  return Transform.rotate(
-                                                    angle: _spin.value *
-                                                        math.pi *
-                                                        2,
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              10),
-                                                      child: DecoratedBox(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          border: Border.all(
-                                                            color: PalmTokens
-                                                                .primary
-                                                                .withValues(
-                                                                    alpha:
-                                                                        0.35),
-                                                            width: 2,
-                                                            style: BorderStyle
-                                                                .solid,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            Positioned.fill(
-                                              child: _CircleScanOverlay(
-                                                progress: _spin,
-                                              ),
-                                            ),
-                                            Center(
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(16),
-                                                decoration: BoxDecoration(
-                                                  color: PalmTokens.surface
-                                                      .withValues(alpha: 0.90),
-                                                  borderRadius:
-                                                      BorderRadius.circular(18),
-                                                  border: Border.all(
-                                                    color: Colors.black
-                                                        .withValues(
-                                                            alpha: 0.06),
-                                                  ),
-                                                  boxShadow:
-                                                      PalmTokens.shadowCard,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.fingerprint,
-                                                  color: PalmTokens.primaryDark,
-                                                  size: 44,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (showPolling)
-                                  Positioned(
-                                    right: 0,
-                                    top: 36,
-                                    child: _FloatingPill(
-                                      dot: true,
-                                      label: 'Polling...',
-                                    ),
-                                  ),
-                                if (showQueued)
-                                  Positioned(
-                                    left: 0,
-                                    bottom: 64,
-                                    child: _FloatingPill(
-                                      dot: false,
-                                      label: upload.status == 'uploading'
-                                          ? 'Uploading'
-                                          : 'Image Queued',
-                                    ),
-                                  ),
-                              ],
+                        Row(
+                          children: [
+                            Icon(Icons.psychology,
+                                color: PalmTokens.primaryDark
+                                    .withValues(alpha: 0.9)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'PalmRead',
+                              style: text.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.2,
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 26),
-                        Text(
-                          _statusTitle(upload),
-                          textAlign: TextAlign.center,
-                          style: text.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.4,
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: PalmTokens.surface.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                                color: Colors.black.withValues(alpha: 0.06)),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: 320,
                           child: Text(
-                            _statusSubtitle(upload),
-                            textAlign: TextAlign.center,
-                            style: text.bodyMedium?.copyWith(
+                            'ID: $idShort',
+                            style: text.labelSmall?.copyWith(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w800,
                               color: PalmTokens.textSub,
-                              fontWeight: FontWeight.w600,
-                              height: 1.35,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 26),
-                        SizedBox(
-                          width: 360,
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    upload.status == 'failed'
-                                        ? 'Failed'
-                                        : 'Processing',
-                                    style: text.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      color: PalmTokens.primaryDark,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '$percent%',
-                                    style: text.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      color: PalmTokens.textSub,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(999),
-                                child: Container(
-                                  height: 12,
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: FractionallySizedBox(
-                                      widthFactor: progress,
-                                      child: Container(
-                                        decoration: const BoxDecoration(
-                                          color: PalmTokens.primary,
-                                          borderRadius: BorderRadius.all(
-                                              Radius.circular(999)),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        SizedBox(
-                          width: 360,
-                          child: OutlinedButton.icon(
-                            onPressed: upload.status == 'completed'
-                                ? null
-                                : () {
-                                    ref
-                                        .read(uploadControllerProvider.notifier)
-                                        .cancel();
-                                    Navigator.of(context).pop();
-                                  },
-                            icon: const Icon(Icons.close),
-                            label: const Text('Cancel Analysis'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              backgroundColor: PalmTokens.surface,
-                              side: BorderSide(
-                                  color: Colors.black.withValues(alpha: 0.08)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Please do not close the app while we process your reading.',
-                          textAlign: TextAlign.center,
-                          style: text.labelSmall?.copyWith(
-                            color: PalmTokens.textSub.withValues(alpha: 0.45),
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 320,
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: PalmTokens.primary
+                                              .withValues(alpha: 0.20),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: PalmTokens.primary
+                                                .withValues(alpha: 0.10),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(22),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: PalmTokens.surface,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: PalmTokens.primary
+                                                  .withValues(alpha: 0.10),
+                                              blurRadius: 24,
+                                              offset: const Offset(0, 14),
+                                            ),
+                                          ],
+                                          border: Border.all(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.06),
+                                          ),
+                                        ),
+                                        child: ClipOval(
+                                          child: Stack(
+                                            children: [
+                                              Positioned.fill(
+                                                child: capture.imageBytes ==
+                                                        null
+                                                    ? Container(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                                alpha: 0.04),
+                                                      )
+                                                    : ColorFiltered(
+                                                        colorFilter:
+                                                            const ColorFilter
+                                                                .matrix([
+                                                          0.2126,
+                                                          0.7152,
+                                                          0.0722,
+                                                          0,
+                                                          0,
+                                                          0.2126,
+                                                          0.7152,
+                                                          0.0722,
+                                                          0,
+                                                          0,
+                                                          0.2126,
+                                                          0.7152,
+                                                          0.0722,
+                                                          0,
+                                                          0,
+                                                          0,
+                                                          0,
+                                                          0,
+                                                          1,
+                                                          0,
+                                                        ]),
+                                                        child: Image.memory(
+                                                          capture.imageBytes!,
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+                                              ),
+                                              Positioned.fill(
+                                                child: AnimatedBuilder(
+                                                  animation: _spin,
+                                                  builder: (context, _) {
+                                                    return Transform.rotate(
+                                                      angle: _spin.value *
+                                                          math.pi *
+                                                          2,
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(10),
+                                                        child: DecoratedBox(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            border: Border.all(
+                                                              color: PalmTokens
+                                                                  .primary
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          0.35),
+                                                              width: 2,
+                                                              style: BorderStyle
+                                                                  .solid,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              Positioned.fill(
+                                                child: _CircleScanOverlay(
+                                                  progress: _spin,
+                                                ),
+                                              ),
+                                              Center(
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(16),
+                                                  decoration: BoxDecoration(
+                                                    color: PalmTokens.surface
+                                                        .withValues(
+                                                            alpha: 0.90),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            18),
+                                                    border: Border.all(
+                                                      color: Colors.black
+                                                          .withValues(
+                                                              alpha: 0.06),
+                                                    ),
+                                                    boxShadow:
+                                                        PalmTokens.shadowCard,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.fingerprint,
+                                                    color:
+                                                        PalmTokens.primaryDark,
+                                                    size: 44,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if (showPolling)
+                                    Positioned(
+                                      right: 0,
+                                      top: 36,
+                                      child: _FloatingPill(
+                                        dot: true,
+                                        label: 'Polling...',
+                                      ),
+                                    ),
+                                  if (showQueued)
+                                    Positioned(
+                                      left: 0,
+                                      bottom: 64,
+                                      child: _FloatingPill(
+                                        dot: false,
+                                        label: upload.status == 'uploading'
+                                            ? 'Uploading'
+                                            : 'Image Queued',
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 26),
+                          Text(
+                            _statusTitle(upload),
+                            textAlign: TextAlign.center,
+                            style: text.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: 320,
+                            child: Text(
+                              _statusSubtitle(upload),
+                              textAlign: TextAlign.center,
+                              style: text.bodyMedium?.copyWith(
+                                color: PalmTokens.textSub,
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 26),
+                          SizedBox(
+                            width: 360,
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      upload.status == 'failed'
+                                          ? 'Failed'
+                                          : 'Processing',
+                                      style: text.labelLarge?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: PalmTokens.primaryDark,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      '$percent%',
+                                      style: text.labelLarge?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: PalmTokens.textSub,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Container(
+                                    height: 12,
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: FractionallySizedBox(
+                                        widthFactor: progress,
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            color: PalmTokens.primary,
+                                            borderRadius: BorderRadius.all(
+                                                Radius.circular(999)),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          SizedBox(
+                            width: 360,
+                            child: OutlinedButton.icon(
+                              onPressed: upload.status == 'completed'
+                                  ? null
+                                  : () {
+                                      ref
+                                          .read(
+                                              uploadControllerProvider.notifier)
+                                          .cancel();
+                                      Navigator.of(context).pop();
+                                    },
+                              icon: const Icon(Icons.close),
+                              label: const Text('Cancel Analysis'),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 18),
+                                backgroundColor: PalmTokens.surface,
+                                side: BorderSide(
+                                    color:
+                                        Colors.black.withValues(alpha: 0.08)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Please do not close the app while we process your reading.',
+                            textAlign: TextAlign.center,
+                            style: text.labelSmall?.copyWith(
+                              color: PalmTokens.textSub.withValues(alpha: 0.45),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

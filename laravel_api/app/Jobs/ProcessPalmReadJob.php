@@ -6,6 +6,7 @@ use App\Models\PalmRead;
 use App\Services\Cv\CvClient;
 use App\Services\Push\FcmPushService;
 use App\Services\Reading\ReadingGenerator;
+use App\Services\Reading\LineSignalBuilder;
 use App\Services\Signature\SignatureDeduper;
 use App\Services\Storage\PalmImageStorage;
 use Illuminate\Bus\Queueable;
@@ -37,6 +38,7 @@ class ProcessPalmReadJob implements ShouldQueue
     public function handle(
         CvClient $cvClient,
         ReadingGenerator $readingGenerator,
+        LineSignalBuilder $lineSignalBuilder,
         SignatureDeduper $deduper,
         PalmImageStorage $storage,
         FcmPushService $pushService
@@ -62,7 +64,7 @@ class ProcessPalmReadJob implements ShouldQueue
 
             $quantized = is_array($cvResult['quantized_buckets'] ?? null) ? $cvResult['quantized_buckets'] : [];
             $signatureHash = (string) $cvResult['hand_signature_hash'];
-            $lineSignals = $this->buildLineSignals(
+            $lineSignals = $lineSignalBuilder->build(
                 $overlay['lines'] ?? [],
                 (int) ($overlay['image']['width'] ?? 0),
                 (int) ($overlay['image']['height'] ?? 0)
@@ -220,76 +222,6 @@ class ProcessPalmReadJob implements ShouldQueue
             ],
             'lines' => $normalizedLines,
         ];
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $lines
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildLineSignals(array $lines, int $imageWidth, int $imageHeight): array
-    {
-        $indexed = collect($lines)->keyBy('key');
-        $signals = [];
-
-        $diag = sqrt(max(1, ($imageWidth * $imageWidth) + ($imageHeight * $imageHeight)));
-
-        foreach (config('palm.line_keys') as $lineKey) {
-            $line = $indexed->get($lineKey);
-            $confidence = (float) ($line['confidence'] ?? 0.0);
-            $missing = (bool) ($line['missing'] ?? true);
-
-            $points = is_array($line['points'] ?? null) ? $line['points'] : [];
-            $pointCount = count($points);
-            $lengthPx = 0.0;
-            $avgY = 0.0;
-            $validPoints = 0;
-
-            for ($i = 1; $i < $pointCount; $i++) {
-                $prev = $points[$i - 1];
-                $curr = $points[$i];
-                $x1 = (float) ($prev['x'] ?? 0.0);
-                $y1 = (float) ($prev['y'] ?? 0.0);
-                $x2 = (float) ($curr['x'] ?? 0.0);
-                $y2 = (float) ($curr['y'] ?? 0.0);
-                $lengthPx += hypot($x2 - $x1, $y2 - $y1);
-            }
-
-            foreach ($points as $point) {
-                $avgY += (float) ($point['y'] ?? 0.0);
-                $validPoints++;
-            }
-
-            $avgY = $validPoints > 0 ? $avgY / $validPoints : 0.0;
-
-            $signals[] = [
-                'key' => $lineKey,
-                'detected' => ! $missing && $pointCount >= 2,
-                'confidence' => round($confidence, 3),
-                'confidence_bucket' => $this->confidenceBucket($confidence),
-                'point_count' => $pointCount,
-                'length_ratio' => round($lengthPx / max(1.0, $diag), 4),
-                'avg_vertical_ratio' => $imageHeight > 0 ? round($avgY / $imageHeight, 4) : 0.0,
-            ];
-        }
-
-        return $signals;
-    }
-
-    private function confidenceBucket(float $confidence): string
-    {
-        if ($confidence < 0.25) {
-            return 'very_low';
-        }
-
-        if ($confidence < 0.50) {
-            return 'low';
-        }
-
-        if ($confidence < 0.75) {
-            return 'medium';
-        }
-
-        return 'high';
     }
 
     /**

@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\PurgePalmImagesCommand::class,
         \App\Console\Commands\EnforceEnglishReadingsCommand::class,
+        \App\Console\Commands\BackfillLineSituationsCommand::class,
     ];
 
     protected function schedule(Schedule $schedule): void

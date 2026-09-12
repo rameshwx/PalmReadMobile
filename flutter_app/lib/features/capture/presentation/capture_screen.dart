@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
+import '../domain/capture_quality_result.dart';
 import '../state/capture_controller.dart';
 import 'preview_screen.dart';
 import 'web_camera_screen.dart';
@@ -112,23 +114,214 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(captureControllerProvider);
-    final quality = state.quality;
-    final text = Theme.of(context).textTheme;
+  Widget _cameraFrame(CaptureState state, TextTheme text) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: AspectRatio(
+          aspectRatio: 3 / 4,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
+              color: const Color(0xFF0B1011),
+              boxShadow: PalmTokens.shadowCard,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(PalmTokens.radiusXl),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.22),
+                            Colors.black.withValues(alpha: 0.58),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Positioned.fill(
+                    child: Padding(
+                      padding: EdgeInsets.all(22),
+                      child: CustomPaint(painter: _HandGuidePainter()),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Stack(
+                        children: const [
+                          _CornerMarker(alignment: Alignment.topLeft),
+                          _CornerMarker(alignment: Alignment.topRight),
+                          _CornerMarker(alignment: Alignment.bottomLeft),
+                          _CornerMarker(alignment: Alignment.bottomRight),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: AnimatedBuilder(
+                      animation: _scanController,
+                      builder: (context, _) => Align(
+                        alignment: Alignment(
+                            0, -0.78 + (1.56 * _scanController.value)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Container(
+                            height: 2.5,
+                            decoration: BoxDecoration(
+                              color: PalmTokens.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: PalmTokens.primary
+                                      .withValues(alpha: 0.75),
+                                  blurRadius: 18,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 18,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.12)),
+                        ),
+                        child: Text(
+                          'Align your palm within the frame',
+                          style: text.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (state.isEvaluating)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.38),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                              color: PalmTokens.primary),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
+  Widget _qualityPills(CaptureQualityResult? quality) {
     final lightingOk = quality?.isBrightnessOk ?? false;
     final focusOk = quality?.isBlurOk ?? false;
     final centeredOk = quality?.isCentered ?? false;
 
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      alignment: WrapAlignment.center,
+      children: [
+        _StatusPill(
+          icon: Icons.wb_sunny,
+          label: quality == null
+              ? 'Lighting'
+              : 'Lighting: ${lightingOk ? 'Good' : 'Low'}',
+          accent: lightingOk ? PalmTokens.primaryDark : PalmTokens.warning,
+        ),
+        _StatusPill(
+          icon: focusOk ? Icons.check_circle : Icons.blur_on,
+          label:
+              quality == null ? 'Focus' : 'Focus: ${focusOk ? 'Good' : 'Low'}',
+          accent: focusOk ? PalmTokens.primaryDark : PalmTokens.warning,
+        ),
+        _StatusPill(
+          icon: Icons.center_focus_strong,
+          label: quality == null ? 'Centering' : 'Centering',
+          accent: centeredOk ? PalmTokens.textMain : PalmTokens.textSub,
+        ),
+      ],
+    );
+  }
+
+  Widget _captureControls(CaptureState state, TextTheme text) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _qualityPills(state.quality),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionCard(
+                title: 'Use Camera',
+                icon: Icons.photo_camera_outlined,
+                selected: true,
+                enabled: !state.isEvaluating,
+                onTap: _pickFromCamera,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _ActionCard(
+                title: 'Choose Photo',
+                icon: Icons.photo_library_outlined,
+                selected: false,
+                enabled: !state.isEvaluating,
+                onTap: _pickFromGallery,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Ensure your hand is flat and fingers are slightly spread.\nAvoid shadows for best results.',
+          textAlign: TextAlign.center,
+          style: text.bodySmall?.copyWith(
+            color: PalmTokens.textSub,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(captureControllerProvider);
+    final text = Theme.of(context).textTheme;
+    final desktop = MediaQuery.sizeOf(context).width >= 1024;
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-          child: Column(
-            children: [
-              Row(
+        child: PalmPageContainer(
+          maxWidth: 1240,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final header = Row(
                 children: [
                   if (Navigator.of(context).canPop())
                     IconButton(
@@ -178,230 +371,41 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
                     icon: const Icon(Icons.help_outline),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: AspectRatio(
-                      aspectRatio: 3 / 4,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(PalmTokens.radiusXl),
-                          color: const Color(0xFF0B1011),
-                          boxShadow: PalmTokens.shadowCard,
-                        ),
-                        child: ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(PalmTokens.radiusXl),
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withValues(alpha: 0.25),
-                                        Colors.black.withValues(alpha: 0.55),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withValues(alpha: 0.08),
-                                        Colors.black.withValues(alpha: 0.55),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const Positioned.fill(
-                                child: Padding(
-                                  padding: EdgeInsets.all(22),
-                                  child: CustomPaint(
-                                    painter: _HandGuidePainter(),
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18),
-                                  child: Stack(
-                                    children: const [
-                                      _CornerMarker(
-                                          alignment: Alignment.topLeft),
-                                      _CornerMarker(
-                                          alignment: Alignment.topRight),
-                                      _CornerMarker(
-                                          alignment: Alignment.bottomLeft),
-                                      _CornerMarker(
-                                          alignment: Alignment.bottomRight),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: AnimatedBuilder(
-                                  animation: _scanController,
-                                  builder: (context, _) {
-                                    final t = _scanController.value;
-                                    final y = -0.78 + (1.56 * t);
-                                    return Align(
-                                      alignment: Alignment(0, y),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12),
-                                        child: Container(
-                                          height: 2.5,
-                                          decoration: BoxDecoration(
-                                            color: PalmTokens.primary,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: PalmTokens.primary
-                                                    .withValues(alpha: 0.75),
-                                                blurRadius: 18,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                bottom: 18,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.35),
-                                          borderRadius:
-                                              BorderRadius.circular(999),
-                                          border: Border.all(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.12),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Align your palm within the frame',
-                                          style: text.bodyMedium?.copyWith(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.92),
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (state.isEvaluating)
-                                Positioned.fill(
-                                  child: Container(
-                                    color: Colors.black.withValues(alpha: 0.38),
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        color: PalmTokens.primary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
+              );
+
+              if (desktop) {
+                return Column(
+                  children: [
+                    header,
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(child: _cameraFrame(state, text)),
+                          const SizedBox(width: 48),
+                          SizedBox(
+                            width: constraints.maxWidth
+                                .clamp(320.0, 390.0)
+                                .toDouble(),
+                            child: _captureControls(state, text),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.center,
+                  ],
+                );
+              }
+
+              return Column(
                 children: [
-                  _StatusPill(
-                    icon: Icons.wb_sunny,
-                    label: quality == null
-                        ? 'Lighting'
-                        : 'Lighting: ${lightingOk ? 'Good' : 'Low'}',
-                    accent: lightingOk
-                        ? PalmTokens.primaryDark
-                        : PalmTokens.warning,
-                  ),
-                  _StatusPill(
-                    icon: focusOk ? Icons.check_circle : Icons.blur_on,
-                    label: quality == null
-                        ? 'Focus'
-                        : 'Focus: ${focusOk ? 'Good' : 'Low'}',
-                    accent:
-                        focusOk ? PalmTokens.primaryDark : PalmTokens.warning,
-                  ),
-                  _StatusPill(
-                    icon: Icons.center_focus_strong,
-                    label: quality == null ? 'Centering' : 'Centering',
-                    accent:
-                        centeredOk ? PalmTokens.textMain : PalmTokens.textSub,
-                  ),
+                  header,
+                  const SizedBox(height: 12),
+                  Expanded(child: _cameraFrame(state, text)),
+                  const SizedBox(height: 14),
+                  _captureControls(state, text),
                 ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'Use Camera',
-                      icon: Icons.photo_camera_outlined,
-                      selected: true,
-                      enabled: !state.isEvaluating,
-                      onTap: _pickFromCamera,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'Choose Photo',
-                      icon: Icons.photo_library_outlined,
-                      selected: false,
-                      enabled: !state.isEvaluating,
-                      onTap: _pickFromGallery,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Ensure your hand is flat and fingers are slightly spread.\nAvoid shadows for best results.',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: text.bodySmall?.copyWith(
-                  color: PalmTokens.textSub,
-                  fontWeight: FontWeight.w600,
-                  height: 1.35,
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

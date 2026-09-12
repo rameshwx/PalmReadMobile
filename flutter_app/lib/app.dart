@@ -9,6 +9,7 @@ import 'features/capture/presentation/capture_screen.dart';
 import 'features/history/presentation/history_screen.dart';
 import 'shared/theme/palm_theme.dart';
 import 'shared/theme/palm_tokens.dart';
+import 'shared/widgets/responsive_page.dart';
 
 class PalmReadApp extends ConsumerWidget {
   const PalmReadApp({super.key});
@@ -59,12 +60,168 @@ class _HomeShellState extends ConsumerState<_HomeShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [const CaptureScreen(), const HistoryScreen()];
+    final isDesktop = MediaQuery.sizeOf(context).width >= 1024;
+
+    if (isDesktop) {
+      return Scaffold(
+        body: Row(
+          children: [
+            PalmDesktopSidebar(
+              index: _index,
+              onSelect: (idx) => setState(() => _index = idx),
+              onAccount: _openAccount,
+            ),
+            Expanded(
+              child: ColoredBox(
+                color: PalmTokens.background,
+                child: pages[_index],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: pages[_index],
       bottomNavigationBar: _BottomNavBar(
         index: _index,
         onSelect: (idx) => setState(() => _index = idx),
+      ),
+    );
+  }
+
+  Future<void> _openAccount() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListTile(
+          leading: const Icon(Icons.logout),
+          title: const Text('Log out'),
+          onTap: () async {
+            Navigator.of(sheetContext).pop();
+            await ref.read(authControllerProvider.notifier).logout();
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class PalmDesktopSidebar extends StatelessWidget {
+  const PalmDesktopSidebar({
+    super.key,
+    required this.index,
+    required this.onSelect,
+    required this.onAccount,
+  });
+
+  final int index;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: PalmTokens.surface,
+      child: SizedBox(
+        width: 260,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 26, 18, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 8, bottom: 34),
+                  child: PalmBrandMark(),
+                ),
+                _SidebarItem(
+                  label: 'Capture',
+                  icon: Icons.filter_center_focus,
+                  selected: index == 0,
+                  onTap: () => onSelect(0),
+                ),
+                const SizedBox(height: 8),
+                _SidebarItem(
+                  label: 'History',
+                  icon: Icons.history,
+                  selected: index == 1,
+                  onTap: () => onSelect(1),
+                ),
+                const Spacer(),
+                const Divider(height: 1),
+                const SizedBox(height: 14),
+                _SidebarItem(
+                  label: 'Account & settings',
+                  icon: Icons.manage_accounts_outlined,
+                  selected: false,
+                  onTap: onAccount,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  const _SidebarItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? PalmTokens.neutralDark : PalmTokens.textSub;
+    return Material(
+      color: selected
+          ? PalmTokens.primary.withValues(alpha: 0.16)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 21),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: color,
+                        fontWeight:
+                            selected ? FontWeight.w900 : FontWeight.w700,
+                      ),
+                ),
+              ),
+              if (selected)
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: PalmTokens.primaryDark,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

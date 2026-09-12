@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../result/domain/palm_read_models.dart';
 import '../../result/presentation/result_screen.dart';
@@ -87,152 +88,178 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-              child: Row(
-                children: [
-                  Text(
-                    'History',
-                    style: text.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: _openSettings,
-                    icon: const Icon(Icons.tune),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+        child: PalmPageContainer(
+          maxWidth: 1200,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
                 child: Row(
                   children: [
-                    _FilterPill(
-                      selected: _filter == _HistoryFilter.all,
-                      label: 'All',
-                      onTap: () => setState(() => _filter = _HistoryFilter.all),
+                    Text(
+                      'History',
+                      style: text.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.6,
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    _FilterPill(
-                      selected: _filter == _HistoryFilter.completed,
-                      label: 'Completed',
-                      onTap: () =>
-                          setState(() => _filter = _HistoryFilter.completed),
-                    ),
-                    const SizedBox(width: 12),
-                    _FilterPill(
-                      selected: _filter == _HistoryFilter.processing,
-                      label: 'Processing',
-                      onTap: () =>
-                          setState(() => _filter = _HistoryFilter.processing),
-                    ),
-                    const SizedBox(width: 12),
-                    _FilterPill(
-                      selected: _filter == _HistoryFilter.failed,
-                      label: 'Failed',
-                      onTap: () =>
-                          setState(() => _filter = _HistoryFilter.failed),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: _openSettings,
+                      icon: const Icon(Icons.tune),
                     ),
                   ],
                 ),
               ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async => ref.refresh(palmHistoryProvider.future),
-                child: historyAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  error: (err, _) => ListView(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
                     children: [
-                      const SizedBox(height: 160),
-                      Center(child: Text('Failed: $err')),
+                      _FilterPill(
+                        selected: _filter == _HistoryFilter.all,
+                        label: 'All',
+                        onTap: () =>
+                            setState(() => _filter = _HistoryFilter.all),
+                      ),
+                      const SizedBox(width: 12),
+                      _FilterPill(
+                        selected: _filter == _HistoryFilter.completed,
+                        label: 'Completed',
+                        onTap: () =>
+                            setState(() => _filter = _HistoryFilter.completed),
+                      ),
+                      const SizedBox(width: 12),
+                      _FilterPill(
+                        selected: _filter == _HistoryFilter.processing,
+                        label: 'Processing',
+                        onTap: () =>
+                            setState(() => _filter = _HistoryFilter.processing),
+                      ),
+                      const SizedBox(width: 12),
+                      _FilterPill(
+                        selected: _filter == _HistoryFilter.failed,
+                        label: 'Failed',
+                        onTap: () =>
+                            setState(() => _filter = _HistoryFilter.failed),
+                      ),
                     ],
                   ),
-                  data: (page) {
-                    final all = page.items;
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async =>
+                      ref.refresh(palmHistoryProvider.future),
+                  child: historyAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (err, _) => ListView(
+                      children: [
+                        const SizedBox(height: 160),
+                        Center(child: Text('Failed: $err')),
+                      ],
+                    ),
+                    data: (page) {
+                      final all = page.items;
 
-                    List<PalmReadDetail> filtered() {
-                      switch (_filter) {
-                        case _HistoryFilter.completed:
-                          return all
-                              .where((e) => e.status == 'completed')
-                              .toList();
-                        case _HistoryFilter.failed:
-                          return all
-                              .where((e) => e.status == 'failed')
-                              .toList();
-                        case _HistoryFilter.processing:
-                          return all
-                              .where((e) =>
-                                  e.status != 'completed' &&
-                                  e.status != 'failed')
-                              .toList();
-                        case _HistoryFilter.all:
-                          return all;
+                      List<PalmReadDetail> filtered() {
+                        switch (_filter) {
+                          case _HistoryFilter.completed:
+                            return all
+                                .where((e) => e.status == 'completed')
+                                .toList();
+                          case _HistoryFilter.failed:
+                            return all
+                                .where((e) => e.status == 'failed')
+                                .toList();
+                          case _HistoryFilter.processing:
+                            return all
+                                .where((e) =>
+                                    e.status != 'completed' &&
+                                    e.status != 'failed')
+                                .toList();
+                          case _HistoryFilter.all:
+                            return all;
+                        }
                       }
-                    }
 
-                    final items = filtered();
-                    if (items.isEmpty) {
+                      final items = filtered();
+                      if (items.isEmpty) {
+                        return ListView(
+                          padding: const EdgeInsets.fromLTRB(20, 80, 20, 20),
+                          children: [
+                            Center(
+                              child: Text(
+                                'No readings yet.',
+                                style: text.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: PalmTokens.textSub,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      final groups = _groupItems(items);
+                      final desktop = MediaQuery.sizeOf(context).width >= 1024;
                       return ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 80, 20, 20),
+                        padding: const EdgeInsets.fromLTRB(0, 10, 0, 20),
                         children: [
+                          for (final group in groups) ...[
+                            _SectionHeader(label: group.label),
+                            const SizedBox(height: 10),
+                            if (desktop)
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final width = (constraints.maxWidth - 12) / 2;
+                                  return Wrap(
+                                    spacing: 12,
+                                    runSpacing: 12,
+                                    children: [
+                                      for (final item in group.items)
+                                        SizedBox(
+                                          width: width,
+                                          child: _HistoryTile(item: item),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              )
+                            else
+                              for (final item in group.items) ...[
+                                _HistoryTile(item: item),
+                                const SizedBox(height: 12),
+                              ],
+                            const SizedBox(height: 8),
+                          ],
                           Center(
-                            child: Text(
-                              'No readings yet.',
-                              style: text.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: PalmTokens.textSub,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 8, bottom: 30),
+                              child: Text(
+                                'Showing ${items.length} of ${page.total} readings',
+                                style: text.bodySmall?.copyWith(
+                                  color:
+                                      PalmTokens.textSub.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       );
-                    }
-
-                    final groups = _groupItems(items);
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                      children: [
-                        for (final group in groups) ...[
-                          _SectionHeader(label: group.label),
-                          const SizedBox(height: 10),
-                          for (final item in group.items) ...[
-                            _HistoryTile(item: item),
-                            const SizedBox(height: 12),
-                          ],
-                          const SizedBox(height: 8),
-                        ],
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 30),
-                            child: Text(
-                              'Showing ${items.length} of ${page.total} readings',
-                              style: text.bodySmall?.copyWith(
-                                color:
-                                    PalmTokens.textSub.withValues(alpha: 0.7),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

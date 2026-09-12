@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/palm_tokens.dart';
+import '../../../shared/widgets/responsive_page.dart';
 import '../domain/auth_models.dart';
 import '../state/auth_controller.dart';
 
@@ -187,168 +188,179 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         children: [
           const _AuthBackground(),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed:
-                          _verifying ? null : () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: PalmTokens.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: PalmTokens.shadowSoft,
+            child: PalmPageContainer(
+              maxWidth: 560,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: Card(
+                elevation: 0,
+                color: PalmTokens.surface.withValues(alpha: 0.78),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          onPressed: _verifying
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.mark_email_read_outlined,
-                        color: PalmTokens.primaryDark,
-                        size: 34,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Text(
-                    'Enter 5-Digit Code',
-                    textAlign: TextAlign.center,
-                    style: text.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'We sent a code to your email',
-                    textAlign: TextAlign.center,
-                    style: text.bodyLarge?.copyWith(
-                      color: PalmTokens.textSub,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.email,
-                    textAlign: TextAlign.center,
-                    style: text.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: PalmTokens.textMain,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(_digits, (i) {
-                        return Padding(
-                          padding:
-                              EdgeInsets.only(right: i == _digits - 1 ? 0 : 10),
-                          child: _OtpBox(
-                            controller: _controllers[i],
-                            focusNode: _focusNodes[i],
-                            enabled: !_verifying,
-                            onChanged: (v) => _setDigit(i, v),
+                      const SizedBox(height: 18),
+                      Center(
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: PalmTokens.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: PalmTokens.shadowSoft,
                           ),
-                        );
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-                  FilledButton.icon(
-                    onPressed: _verifying ? null : _verify,
-                    icon: _verifying
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: PalmTokens.neutralDark,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_outline),
-                    label: Text(_verifying ? 'Verifying...' : 'Verify & Login'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          "Didn't receive the code?",
-                          style: text.bodyMedium?.copyWith(
-                            color: PalmTokens.textSub,
-                            fontWeight: FontWeight.w600,
+                          child: const Icon(
+                            Icons.mark_email_read_outlined,
+                            color: PalmTokens.primaryDark,
+                            size: 34,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        GestureDetector(
-                          onTap: (_resendRemainingSeconds > 0 ||
-                                  _resending ||
-                                  _verifying)
-                              ? null
-                              : _resend,
-                          child: Text.rich(
-                            TextSpan(
-                              text: 'Resend Code',
-                              style: text.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                decoration: TextDecoration.underline,
-                                decorationThickness: 2,
-                                decorationColor:
-                                    PalmTokens.primary.withValues(alpha: 0.35),
-                                color:
-                                    (_resendRemainingSeconds > 0 || _resending)
+                      ),
+                      const SizedBox(height: 22),
+                      Text(
+                        'Enter 5-Digit Code',
+                        textAlign: TextAlign.center,
+                        style: text.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'We sent a code to your email',
+                        textAlign: TextAlign.center,
+                        style: text.bodyLarge?.copyWith(
+                          color: PalmTokens.textSub,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.email,
+                        textAlign: TextAlign.center,
+                        style: text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: PalmTokens.textMain,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(_digits, (i) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                  right: i == _digits - 1 ? 0 : 10),
+                              child: _OtpBox(
+                                controller: _controllers[i],
+                                focusNode: _focusNodes[i],
+                                enabled: !_verifying,
+                                onChanged: (v) => _setDigit(i, v),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      FilledButton.icon(
+                        onPressed: _verifying ? null : _verify,
+                        icon: _verifying
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: PalmTokens.neutralDark,
+                                ),
+                              )
+                            : const Icon(Icons.check_circle_outline),
+                        label: Text(
+                            _verifying ? 'Verifying...' : 'Verify & Login'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              "Didn't receive the code?",
+                              style: text.bodyMedium?.copyWith(
+                                color: PalmTokens.textSub,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: (_resendRemainingSeconds > 0 ||
+                                      _resending ||
+                                      _verifying)
+                                  ? null
+                                  : _resend,
+                              child: Text.rich(
+                                TextSpan(
+                                  text: 'Resend Code',
+                                  style: text.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    decoration: TextDecoration.underline,
+                                    decorationThickness: 2,
+                                    decorationColor: PalmTokens.primary
+                                        .withValues(alpha: 0.35),
+                                    color: (_resendRemainingSeconds > 0 ||
+                                            _resending)
                                         ? PalmTokens.textSub
                                         : PalmTokens.textMain,
-                              ),
-                              children: [
-                                if (_resendRemainingSeconds > 0) ...[
-                                  TextSpan(
-                                    text:
-                                        '  (${_formatSeconds(_resendRemainingSeconds)})',
-                                    style: text.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: PalmTokens.primaryDark,
-                                      decoration: TextDecoration.none,
-                                    ),
                                   ),
-                                ],
-                              ],
+                                  children: [
+                                    if (_resendRemainingSeconds > 0) ...[
+                                      TextSpan(
+                                        text:
+                                            '  (${_formatSeconds(_resendRemainingSeconds)})',
+                                        style: text.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          color: PalmTokens.primaryDark,
+                                          decoration: TextDecoration.none,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Need help? Contact Support',
+                              style: text.bodySmall?.copyWith(
+                                color:
+                                    PalmTokens.textSub.withValues(alpha: 0.8),
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                                decorationColor:
+                                    PalmTokens.textSub.withValues(alpha: 0.35),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Need help? Contact Support',
-                          style: text.bodySmall?.copyWith(
-                            color: PalmTokens.textSub.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                            decorationColor:
-                                PalmTokens.textSub.withValues(alpha: 0.35),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(height: 8),
+                    ],
                   ),
-                  const Spacer(),
-                  const SizedBox(height: 8),
-                ],
+                ),
               ),
             ),
           ),

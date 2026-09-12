@@ -67,8 +67,17 @@ class PalmReadFlowTest extends TestCase
             ->assertJsonPath('handedness', 'left')
             ->assertJsonPath('result_json.reading_style_version', 2)
             ->assertJsonPath('result_json.tone', 'friend-professional')
-            ->assertJsonCount(0, 'result_json.line_situations')
+            ->assertJsonCount(5, 'result_json.line_situations')
+            ->assertJsonPath('result_json.line_situations.0.key', 'life')
+            ->assertJsonPath('result_json.line_situations.3.key', 'fate')
             ->assertJsonStructure(['reading_text', 'result_json', 'hand_signature_hash']);
+
+        $lineSituations = $pollResponse->json('result_json.line_situations');
+        $this->assertSame(
+            ['life', 'head', 'heart', 'fate', 'sun'],
+            array_column($lineSituations, 'key'),
+        );
+        $this->assertNotSame('', trim((string) $pollResponse->json('result_json.line_situations.3.prediction')));
 
         $readingText = (string) $pollResponse->json('reading_text');
         $this->assertNotSame('', trim($readingText));

@@ -85,122 +85,140 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                return Center(
                   child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(minHeight: constraints.maxHeight),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 56),
-                          Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color:
-                                    PalmTokens.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: PalmTokens.shadowSoft,
-                              ),
-                              child: const Icon(
-                                Icons.fingerprint,
-                                color: PalmTokens.primaryDark,
-                                size: 34,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            'Welcome Back',
-                            textAlign: TextAlign.center,
-                            style: text.displaySmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.6,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Enter your email to sign in or create an account.',
-                            textAlign: TextAlign.center,
-                            style: text.bodyLarge?.copyWith(
-                              color: PalmTokens.textSub,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
-                          ),
-                          const SizedBox(height: 42),
-                          Form(
-                            key: _formKey,
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: ConstrainedBox(
+                          constraints:
+                              BoxConstraints(minHeight: constraints.maxHeight),
+                          child: IntrinsicHeight(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  'Email Address',
-                                  style: text.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  autofillHints: const [AutofillHints.email],
-                                  validator: _validateEmail,
-                                  enabled: !_isSubmitting,
-                                  decoration: const InputDecoration(
-                                    hintText: 'you@example.com',
-                                    prefixIcon: Icon(Icons.mail_outline),
+                                const SizedBox(height: 56),
+                                Center(
+                                  child: Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color: PalmTokens.primary
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: PalmTokens.shadowSoft,
+                                    ),
+                                    child: const Icon(
+                                      Icons.fingerprint,
+                                      color: PalmTokens.primaryDark,
+                                      size: 34,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 22),
-                                FilledButton.icon(
-                                  onPressed: _isSubmitting ? null : _sendOtp,
-                                  icon: _isSubmitting
-                                      ? const SizedBox(
-                                          height: 18,
-                                          width: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: PalmTokens.neutralDark,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.mark_email_read_outlined),
-                                  label: Text(
-                                    _isSubmitting ? 'Sending...' : 'Send OTP',
+                                Text(
+                                  'Welcome Back',
+                                  textAlign: TextAlign.center,
+                                  style: text.displaySmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.6,
                                   ),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 20, horizontal: 18),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(22),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Enter your email to sign in or create an account.',
+                                  textAlign: TextAlign.center,
+                                  style: text.bodyLarge?.copyWith(
+                                    color: PalmTokens.textSub,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.25,
+                                  ),
+                                ),
+                                const SizedBox(height: 42),
+                                Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        'Email Address',
+                                        style: text.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      TextFormField(
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        autofillHints: const [
+                                          AutofillHints.email
+                                        ],
+                                        validator: _validateEmail,
+                                        enabled: !_isSubmitting,
+                                        decoration: const InputDecoration(
+                                          hintText: 'you@example.com',
+                                          prefixIcon: Icon(Icons.mail_outline),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 22),
+                                      FilledButton.icon(
+                                        onPressed:
+                                            _isSubmitting ? null : _sendOtp,
+                                        icon: _isSubmitting
+                                            ? const SizedBox(
+                                                height: 18,
+                                                width: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: PalmTokens.neutralDark,
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons.mark_email_read_outlined),
+                                        label: Text(
+                                          _isSubmitting
+                                              ? 'Sending...'
+                                              : 'Send OTP',
+                                        ),
+                                        style: FilledButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 20, horizontal: 18),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(22),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      bottom: 18, top: 28),
+                                  child: Center(
+                                    child: Text(
+                                      'Need help? Contact Support',
+                                      style: text.bodySmall?.copyWith(
+                                        color: PalmTokens.textSub
+                                            .withValues(alpha: 0.8),
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: PalmTokens.textSub
+                                            .withValues(alpha: 0.35),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const Spacer(),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 18, top: 28),
-                            child: Center(
-                              child: Text(
-                                'Need help? Contact Support',
-                                style: text.bodySmall?.copyWith(
-                                  color:
-                                      PalmTokens.textSub.withValues(alpha: 0.8),
-                                  fontWeight: FontWeight.w600,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: PalmTokens.textSub
-                                      .withValues(alpha: 0.35),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),

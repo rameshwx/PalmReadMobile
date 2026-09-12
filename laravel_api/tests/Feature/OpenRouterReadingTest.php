@@ -78,6 +78,7 @@ class OpenRouterReadingTest extends TestCase
         );
 
         $this->assertSame('rules', $result['result_json']['generator']);
+        $this->assertCompleteFallbackLines($result['line_situations']);
         Http::assertNothingSent();
     }
 
@@ -96,6 +97,7 @@ class OpenRouterReadingTest extends TestCase
         );
 
         $this->assertSame('rules', $result['result_json']['generator']);
+        $this->assertCompleteFallbackLines($result['line_situations']);
         Http::assertSentCount(1);
     }
 
@@ -116,6 +118,7 @@ class OpenRouterReadingTest extends TestCase
         );
 
         $this->assertSame('rules', $result['result_json']['generator']);
+        $this->assertCompleteFallbackLines($result['line_situations']);
         $this->assertSame(1, $requestAttempts);
     }
 
@@ -147,6 +150,7 @@ class OpenRouterReadingTest extends TestCase
         );
 
         $this->assertSame('rules', $result['result_json']['generator']);
+        $this->assertCompleteFallbackLines($result['line_situations']);
         Http::assertSentCount(1);
     }
 
@@ -170,7 +174,7 @@ class OpenRouterReadingTest extends TestCase
                 ], 200),
         ]);
 
-        $first = app(LlmReadingGenerator::class)->generate(
+        $first = app(ReadingGenerator::class)->generate(
             correlationId: '55555555-5555-5555-5555-555555555555',
             signatureHash: hash('sha256', 'fixture-signature-1'),
             handedness: 'left',
@@ -178,7 +182,7 @@ class OpenRouterReadingTest extends TestCase
             baseResultJson: [],
             lineSignals: $this->lineSignals(),
         );
-        $second = app(LlmReadingGenerator::class)->generate(
+        $second = app(ReadingGenerator::class)->generate(
             correlationId: '66666666-6666-6666-6666-666666666666',
             signatureHash: hash('sha256', 'fixture-signature-2'),
             handedness: 'left',
@@ -187,8 +191,10 @@ class OpenRouterReadingTest extends TestCase
             lineSignals: $this->lineSignals(),
         );
 
-        $this->assertNull($first);
-        $this->assertNull($second);
+        $this->assertSame('rules', $first['result_json']['generator']);
+        $this->assertSame('rules', $second['result_json']['generator']);
+        $this->assertCompleteFallbackLines($first['line_situations']);
+        $this->assertCompleteFallbackLines($second['line_situations']);
         Http::assertSentCount(2);
     }
 
@@ -240,5 +246,19 @@ class OpenRouterReadingTest extends TestCase
             ['key' => 'fate', 'detected' => true, 'confidence_bucket' => 'low', 'length_ratio' => 0.1],
             ['key' => 'sun', 'detected' => false, 'confidence_bucket' => 'very_low', 'length_ratio' => 0.0],
         ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $lines
+     */
+    private function assertCompleteFallbackLines(array $lines): void
+    {
+        $this->assertSame(['life', 'head', 'heart', 'fate', 'sun'], array_column($lines, 'key'));
+        foreach ($lines as $line) {
+            foreach (['title', 'situation', 'prediction', 'suggestion'] as $field) {
+                $this->assertIsString($line[$field] ?? null);
+                $this->assertNotSame('', trim((string) $line[$field]));
+            }
+        }
     }
 }
