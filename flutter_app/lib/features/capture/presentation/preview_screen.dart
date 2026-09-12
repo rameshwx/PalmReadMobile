@@ -112,17 +112,34 @@ class PreviewScreen extends ConsumerWidget {
         ),
         IconButton(
           onPressed: () {
-            showDialog<void>(
+            showPalmSheet<void>(
               context: context,
-              builder: (_) => AlertDialog(
-                title: const Text('Why verify?'),
-                content: const Text(
-                  'Photo checks and hand detection happen before upload. Selecting the correct hand improves reading accuracy.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Got it'),
+              builder: (ctx) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Why verify?',
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Photo checks and hand detection happen before upload. Selecting the correct hand improves reading accuracy.',
+                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                          color: PalmTokens.textSub,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Got it'),
+                    ),
                   ),
                 ],
               ),

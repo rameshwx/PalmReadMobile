@@ -164,13 +164,36 @@ class _WebCameraScreenState extends State<WebCameraScreen> {
         ),
         IconButton(
           onPressed: () {
-            showDialog<void>(
+            showPalmSheet<void>(
               context: context,
-              builder: (_) => const AlertDialog(
-                title: Text('Camera tips'),
-                content: Text(
-                  'Keep your palm flat, centered, and well lit. Spread your fingers slightly and avoid shadows.',
-                ),
+              builder: (ctx) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Camera tips',
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Keep your palm flat, centered, and well lit. Spread your fingers slightly and avoid shadows.',
+                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                          color: PalmTokens.textSub,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Got it'),
+                    ),
+                  ),
+                ],
               ),
             );
           },

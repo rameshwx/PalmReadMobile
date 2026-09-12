@@ -97,17 +97,34 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen>
   }
 
   void _openHelp() {
-    showDialog<void>(
+    showPalmSheet<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Photo tips'),
-        content: const Text(
-          'Keep your hand flat and centered. Use good lighting and avoid blur or shadows.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+      builder: (ctx) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Photo tips',
+            style: Theme.of(ctx)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Keep your hand flat and centered. Use good lighting and avoid blur or shadows.',
+            style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                  color: PalmTokens.textSub,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Got it'),
+            ),
           ),
         ],
       ),

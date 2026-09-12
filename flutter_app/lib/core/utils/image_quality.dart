@@ -55,7 +55,10 @@ Map<String, dynamic> _evaluateImageQualityMap(Uint8List bytes) {
       );
     }
 
-    final gray = img.grayscale(working);
+    // `image.grayscale` mutates its input. Keep the original color pixels for
+    // the skin-likelihood pass below; otherwise every photo is accidentally
+    // turned grayscale before the browser hand check runs.
+    final gray = img.grayscale(working.clone());
     final width = gray.width;
     final height = gray.height;
 
